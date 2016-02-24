@@ -5,5 +5,6 @@
 void main(void)
 {
     vColor = aColorRectTL / 255.0;
+    vPosition = aPosition.xy;
     gl_Position = uTransform * vec4(aPosition, 1.0);
 }

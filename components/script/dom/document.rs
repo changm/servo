@@ -1248,10 +1248,17 @@ impl Document {
 
     /// https://html.spec.whatwg.org/multipage/#run-the-animation-frame-callbacks
     pub fn run_the_animation_frame_callbacks(&self) {
-        let animation_frame_list;
+        let mut animation_frame_list;
         {
             let mut list = self.animation_frame_list.borrow_mut();
             animation_frame_list = Vec::from_iter(list.drain());
+            // Sort by the identifier to ensure that callbacks
+            // are run in the order they were added (this is required
+            // by the spec link referenced above).
+            animation_frame_list.sort_by(|&(key_a, _),
+                                          &(key_b, _)| {
+                key_a.cmp(&key_b)
+            });
         }
         let performance = self.window.Performance();
         let performance = performance.r();

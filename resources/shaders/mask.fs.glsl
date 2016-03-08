@@ -19,6 +19,16 @@ layout(std140) uniform RectangleBlock {
     vec4 rect_count;
 };
 
+struct Circle {
+    vec4 center_outer_inner_radius;
+    vec4 color;
+};
+
+layout(std140) uniform CircleBlock {
+    Circle circles[256];
+    vec4 circle_count;
+};
+
 void FetchVertex(int row, out vec4 pos, out vec4 color, out vec2 uv) {
     float s_pos = 0.0 / 16.0;
     float s_color = 4.0 / 16.0;
@@ -66,6 +76,18 @@ void FetchRect(int rect_index,
 #endif
 }
 
+void FetchCircle(int circle_index,
+                 out vec2 center,
+                 out float outer_radius,
+                 out float inner_radius,
+                 out vec4 color)
+{
+    vec4 data = circles[circle_index].center_outer_inner_radius;
+    center = data.xy;
+    outer_radius = data.z;
+    inner_radius = data.w;
+    color = circles[circle_index].color;
+}
 
 float ScalarTriple(vec3 u, vec3 v, vec3 w)
 {
@@ -166,16 +188,39 @@ vec4 Bilerp4(vec4 tl, vec4 tr, vec4 br, vec4 bl, vec2 st) {
     return mix(mix(tl, bl, st.y), mix(tr, br, st.y), st.x);
 }
 
+#define DO_CIRCLES
+//#define DO_RECTS
+
 void main(void)
 {
 	int count = 0;
 
 	vec3 final_color = vec3(0.4, 0.4, 0.4);
 
+#ifdef DO_CIRCLES
+    for (int x=0 ; x < int(circle_count.x) ; ++x) {
+        vec2 center;
+        vec4 color;
+        float outer_radius, inner_radius;
+
+        FetchCircle(x,
+                    center,
+                    outer_radius,
+                    inner_radius,
+                    color);
+
+        float d = distance(vPosition.xy, center);
+
+        if (d > inner_radius && d < outer_radius) {
+            final_color = color.rgb * color.a + final_color * (1.0 - color.a);
+        }
+    }
+#endif
+
+#ifdef DO_RECTS
     vec3 p = vec3(vPosition.xy, -100.0);
     vec3 q = vec3(vPosition.xy,  100.0);
 
-#if 1
 	for (int x=0 ; x < int(rect_count.x) ; ++x) {
 		vec4 p0, c0, p1, c1, p2, c2, p3, c3, radius;
         vec2 st0, st1, st2, st3, refPoint;

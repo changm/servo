@@ -190,6 +190,9 @@ pub struct Opts {
     /// True to show webrender profiling stats on screen.
     pub webrender_stats: bool,
 
+    /// True to show webrender profiling stats on screen.
+    pub wr_tile_size: Size2D<i32>,
+
     /// True if WebRender should use multisample antialiasing.
     pub use_msaa: bool,
 
@@ -515,6 +518,7 @@ pub fn default_opts() -> Opts {
         render_api: DEFAULT_RENDER_API,
         profile_dir: None,
         full_backtraces: false,
+        wr_tile_size: Size2D::new(20, 30),
     }
 }
 
@@ -568,6 +572,7 @@ pub fn from_cmdline_args(args: &[String]) -> ArgumentParsingResult {
     opts.optopt("G", "graphics", "Select graphics backend (gl or es2)", "gl");
     opts.optopt("", "profile-dir",
                     "optional directory path for user sessions", "");
+    opts.optopt("", "tile", "Set tile size.", "80x60");
 
     let opt_match = match opts.parse(args) {
         Ok(m) => m,
@@ -709,6 +714,18 @@ pub fn from_cmdline_args(args: &[String]) -> ArgumentParsingResult {
         }
     };
 
+    let wr_tile_size = match opt_match.opt_str("tile") {
+        Some(res_string) => {
+            let res: Vec<i32> = res_string.split('x').map(|r| {
+                r.parse().expect("Error parsing option: --resolution")
+            }).collect();
+            Size2D::new(res[0], res[1])
+        }
+        None => {
+            Size2D::new(20, 30)
+        }
+    };
+
     if opt_match.opt_present("M") {
         MULTIPROCESS.store(true, Ordering::SeqCst)
     }
@@ -801,6 +818,7 @@ pub fn from_cmdline_args(args: &[String]) -> ArgumentParsingResult {
         use_msaa: debug_options.use_msaa,
         profile_dir: opt_match.opt_str("profile-dir"),
         full_backtraces: debug_options.full_backtraces,
+        wr_tile_size: wr_tile_size,
     };
 
     set_defaults(opts);

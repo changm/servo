@@ -143,6 +143,7 @@ impl Browser {
                     enable_aa: opts.enable_text_antialiasing,
                     enable_msaa: opts.use_msaa,
                     enable_profiler: opts.webrender_stats,
+                    tile_size: opts.wr_tile_size,
                 });
             (Some(webrender), Some(webrender_sender))
         } else {

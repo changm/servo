@@ -391,18 +391,20 @@ impl WebRenderDisplayItemConverter for DisplayItem {
                 let mut origin = item.baseline_origin.clone();
                 let mut glyphs = vec!();
 
-                for slice in item.text_run.natural_word_slices_in_visual_order(&item.range) {
-                    for glyph in slice.glyphs.iter_glyphs_for_char_range(&slice.range) {
-                        let glyph_advance = glyph.advance();
-                        let glyph_offset = glyph.offset().unwrap_or(Point2D::zero());
-                        let glyph = webrender_traits::GlyphInstance {
-                            index: glyph.id(),
-                            x: (origin.x + glyph_offset.x).to_f32_px(),
-                            y: (origin.y + glyph_offset.y).to_f32_px(),
+                if *item.text_run.text != "\n".to_owned() {
+                    for slice in item.text_run.natural_word_slices_in_visual_order(&item.range) {
+                        for glyph in slice.glyphs.iter_glyphs_for_char_range(&slice.range) {
+                            let glyph_advance = glyph.advance();
+                            let glyph_offset = glyph.offset().unwrap_or(Point2D::zero());
+                            let glyph = webrender_traits::GlyphInstance {
+                                index: glyph.id(),
+                                x: (origin.x + glyph_offset.x).to_f32_px(),
+                                y: (origin.y + glyph_offset.y).to_f32_px(),
+                            };
+                            origin = Point2D::new(origin.x + glyph_advance, origin.y);
+                            glyphs.push(glyph);
                         };
-                        origin = Point2D::new(origin.x + glyph_advance, origin.y);
-                        glyphs.push(glyph);
-                    };
+                    }
                 }
 
                 if glyphs.len() > 0 {

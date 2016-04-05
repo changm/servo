@@ -37,11 +37,11 @@ vec4 handle_cmd(int i) {
 
 void main(void) {
     vec4 c0 = handle_cmd(0);
+
     if (c0.a == 1.0) {
         oFragColor = c0;
         return;
     }
-
     vec4 c1 = handle_cmd(1);
     vec4 c2 = handle_cmd(2);
     vec4 c3 = handle_cmd(3);

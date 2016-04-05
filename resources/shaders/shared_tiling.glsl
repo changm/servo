@@ -20,6 +20,8 @@
 // Interpolator definitions
 //======================================================================================
 
+varying vec4 vDebug;
+
 // Simple pass
 #define SIMPLE_MAX_OPS      4
 
@@ -44,6 +46,7 @@ flat varying int vComplexCmdCount;
 #define CMD_DRAW_RECT           uint(1)
 #define CMD_DRAW_IMAGE          uint(4)
 #define CMD_DRAW_TEXT           uint(6)
+#define CMD_DRAW_NOOP           uint(15)
 
 //======================================================================================
 // Shared types and UBOs

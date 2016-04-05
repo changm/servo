@@ -23,13 +23,13 @@ void main(void)
     uint tile_cmd_index = instance.cmd_info.x;
     uint tile_cmd_count = instance.cmd_info.y;
 
-    vec4 pos = vec4(instance.rect.xy + aPosition.xy, 0, 1);
+    vec4 pos = vec4(instance.rect.xy + aPosition.xy * instance.rect.zw, 0, 1);
     gl_Position = uTransform * pos;
 
     vSimpleCmdCount = 0;
 
     for (int i=0 ; i < SIMPLE_MAX_OPS ; ++i) {
-        vSimpleMisc[i] = CMD_DRAW_RECT;
+        vSimpleMisc[i] = CMD_DRAW_NOOP;
         vSimpleColor[i] = uint(0);
         vSimplePosition[i] = vec3(0,0,0);
         vSimplePosRect[i] = vec4(0,0,0,0);
@@ -50,7 +50,7 @@ void main(void)
                     vec3 c = layer.screen_vertices[2].xyz / layer.screen_vertices[2].w;
                     vec3 n = normalize(cross(b-a, c-a));
 
-                    local_pos = untransform(instance.rect.xy + instance.scroll_offset + aPosition.xy, n, a, layer.inv_transform);
+                    local_pos = untransform(pos.xy, n, a, layer.inv_transform);
                 }
                 break;
             case CMD_DRAW_RECT:
@@ -66,6 +66,7 @@ void main(void)
                     vec2 interp_uv = mix(image.st0, image.st1, f * local_pos.w);
                     write_simple_op(CMD_DRAW_IMAGE, vec3(interp_uv, local_pos.w), vec4(1,1,1,1), image.st0, image.st1);
                 }
+                break;
             case CMD_DRAW_TEXT:
                 {
                     Text text = texts[cmd_index];
@@ -73,6 +74,7 @@ void main(void)
                     vec2 interp_uv = mix(text.st0, text.st1, f * local_pos.w);
                     write_simple_op(CMD_DRAW_TEXT, vec3(interp_uv, local_pos.w), text.color, text.st0, text.st1);
                 }
+                break;
         }
     }
 }

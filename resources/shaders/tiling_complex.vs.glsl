@@ -47,6 +47,8 @@ void main(void)
             case CMD_DRAW_RECT:
             case CMD_DRAW_IMAGE:
             case CMD_DRAW_TEXT:
+            case CMD_SET_CLIP:
+            case CMD_CLEAR_CLIP:
                 {
                     write_complex_op(c);
                 }

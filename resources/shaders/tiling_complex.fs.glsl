@@ -2,58 +2,92 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-vec4 handle_cmd(int i) {
-    vec4 result = vec4(0, 0, 0, 0);
-
-    uvec2 info = vComplexCmds[i];
-    uint cmd = info.x;
-    uint layer_index = info.y;
-
-    uint cmd_type, cmd_index;
-    decode_cmd(cmd, cmd_type, cmd_index);
-
-    vec2 local_pos = vComplexPosition[layer_index].xy;
-
-    switch (cmd_type) {
-        case CMD_DRAW_RECT:
-            {
-                Rectangle rect = rectangles[cmd_index];
-                if (point_in_rect(local_pos.xy, rect.p0, rect.p1)) {
-                    result = rect.color;
-                }
-            }
-            break;
-        case CMD_DRAW_TEXT:
-            {
-                Text text = texts[cmd_index];
-                if (point_in_rect(local_pos, text.p0, text.p1)) {
-                    vec2 f = (local_pos - text.p0) / (text.p1 - text.p0);
-                    vec2 uv = mix(text.st0, text.st1, f);
-                    result = vec4(text.color.rgb, text.color.a * texture(sMask, uv).a);
-                }
-            }
-            break;
-        case CMD_DRAW_IMAGE:
-            {
-                Image image = images[cmd_index];
-                if (point_in_rect(local_pos, image.p0, image.p1)) {
-                    vec2 f = (local_pos - image.p0) / (image.p1 - image.p0);
-                    vec2 uv = mix(image.st0, image.st1, f);
-                    result = texture(sDiffuse, uv);
-                }
-            }
-            break;
-    }
-
-    return result;
-}
-
 void main(void) {
     vec3 result = vec3(1,1,1);
+    uint clip_index = uint(0xffffffff);
 
-    for (int i=vComplexCmdCount-1 ; i >= 0 ; --i) {
-        vec4 c = handle_cmd(i);
-        result = mix(result, c.rgb, c.a);
+    for (int i=0 ; i < vComplexCmdCount ; ++i) {
+        uvec2 info = vComplexCmds[i];
+        uint cmd = info.x;
+        uint layer_index = info.y;
+
+        uint cmd_type, cmd_index;
+        decode_cmd(cmd, cmd_type, cmd_index);
+
+        vec2 local_pos = vComplexPosition[layer_index].xy;
+
+        switch (cmd_type) {
+            case CMD_SET_CLIP:
+                clip_index = cmd_index;
+                break;
+            case CMD_CLEAR_CLIP:
+                clip_index = uint(0xffffffff);
+                break;
+            default:
+                if (clip_index != uint(0xffffffff)) {
+                    Clip clip = clips[clip_index];
+
+                    float d0 = distance(local_pos, clip.top_left.position);
+                    float d1 = distance(local_pos, clip.top_right.position);
+                    float d2 = distance(local_pos, clip.bottom_left.position);
+                    float d3 = distance(local_pos, clip.bottom_right.position);
+                    bool top_left_out = local_pos.x < clip.top_left.position.x &&
+                                        local_pos.y < clip.top_left.position.y &&
+                                        (d0 > clip.top_left.outer_radius.x ||
+                                         d0 < clip.top_left.inner_radius.x);
+                    bool top_right_out = local_pos.x > clip.top_right.position.x &&
+                                         local_pos.y < clip.top_right.position.y &&
+                                         (d1 > clip.top_right.outer_radius.x ||
+                                          d1 < clip.top_right.inner_radius.x);
+                    bool bottom_left_out = local_pos.x < clip.bottom_left.position.x &&
+                                           local_pos.y > clip.bottom_left.position.y &&
+                                           (d2 > clip.bottom_left.outer_radius.x ||
+                                            d2 < clip.bottom_left.inner_radius.x);
+                    bool bottom_right_out = local_pos.x > clip.bottom_right.position.x &&
+                                            local_pos.y > clip.bottom_right.position.y &&
+                                            (d3 > clip.bottom_right.outer_radius.x ||
+                                             d3 < clip.bottom_right.inner_radius.x);
+
+                    if (top_left_out || top_right_out || bottom_left_out || bottom_right_out) {
+                        break;
+                    }
+                }
+
+                vec4 prim_color = vec4(0,0,0,0);
+
+                switch (cmd_type) {
+                    case CMD_DRAW_RECT:
+                        {
+                            Rectangle rect = rectangles[cmd_index];
+                            if (point_in_rect(local_pos.xy, rect.p0, rect.p1)) {
+                                prim_color = rect.color;
+                            }
+                        }
+                        break;
+                    case CMD_DRAW_TEXT:
+                        {
+                            Text text = texts[cmd_index];
+                            if (point_in_rect(local_pos, text.p0, text.p1)) {
+                                vec2 f = (local_pos - text.p0) / (text.p1 - text.p0);
+                                vec2 uv = mix(text.st0, text.st1, f);
+                                prim_color = vec4(text.color.rgb, text.color.a * texture(sMask, uv).a);
+                            }
+                        }
+                        break;
+                    case CMD_DRAW_IMAGE:
+                        {
+                            Image image = images[cmd_index];
+                            if (point_in_rect(local_pos, image.p0, image.p1)) {
+                                vec2 f = (local_pos - image.p0) / (image.p1 - image.p0);
+                                vec2 uv = mix(image.st0, image.st1, f);
+                                prim_color = texture(sDiffuse, uv);
+                            }
+                        }
+                        break;
+                }
+
+                result = mix(result, prim_color.rgb, prim_color.a);
+        }
     }
 
     oFragColor = vec4(result, 1);

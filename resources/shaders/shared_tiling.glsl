@@ -44,6 +44,8 @@ flat varying int vComplexCmdCount;
 //======================================================================================
 #define CMD_SET_LAYER           uint(0)
 #define CMD_DRAW_RECT           uint(1)
+#define CMD_SET_CLIP            uint(2)
+#define CMD_CLEAR_CLIP          uint(3)
 #define CMD_DRAW_IMAGE          uint(4)
 #define CMD_DRAW_TEXT           uint(6)
 #define CMD_DRAW_NOOP           uint(15)
@@ -90,6 +92,25 @@ struct Image {
 
 layout(std140) uniform Images {
     Image images[UBO_IMAGE_COUNT];
+};
+
+struct ClipCorner {
+    vec2 position;
+    vec2 outer_radius;
+    vec2 inner_radius;
+    vec2 padding;
+};
+
+struct Clip {
+    vec4 rect;
+    ClipCorner top_left;
+    ClipCorner top_right;
+    ClipCorner bottom_left;
+    ClipCorner bottom_right;
+};
+
+layout(std140) uniform Clips {
+    Clip clips[UBO_CLIP_COUNT];
 };
 
 //======================================================================================

@@ -11,12 +11,12 @@ void main(void) {
     TilePrimitive rect_prim = tile.prims[0];
     vPos0 = layer_pos;
     vColor0 = rect_prim.color;
-    vRect0 = vec4(rect_prim.p0, rect_prim.p1);
+    vRect0 = rect_prim.rect;
 
     TilePrimitive text_prim = tile.prims[1];
-    vec2 f = (layer_pos.xy - text_prim.p0) / (text_prim.p1 - text_prim.p0);
-    vec2 interp_uv = mix(text_prim.st0, text_prim.st1, f * layer_pos.z);
+    vec2 f = (layer_pos.xy - text_prim.rect.xy) / (text_prim.rect.zw - text_prim.rect.xy);
+    vec2 interp_uv = mix(text_prim.st.xy, text_prim.st.zw, f * layer_pos.z);
     vPos1 = vec3(interp_uv, layer_pos.z);
     vColor1 = text_prim.color;
-    vRect1 = vec4(text_prim.st0, text_prim.st1);
+    vRect1 = text_prim.st;
 }

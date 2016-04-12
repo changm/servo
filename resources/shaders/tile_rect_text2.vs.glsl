@@ -14,17 +14,17 @@ void main(void) {
 
     vPos0 = layer_pos;
     vColor0 = rect_prim.color;
-    vRect0 = vec4(rect_prim.p0, rect_prim.p1);
+    vRect0 = rect_prim.rect;
 
-    vec2 f0 = (layer_pos.xy - text_prim0.p0) / (text_prim0.p1 - text_prim0.p0);
-    vec2 interp_uv0 = mix(text_prim0.st0, text_prim0.st1, f0 * layer_pos.z);
+    vec2 f0 = (layer_pos.xy - text_prim0.rect.xy) / (text_prim0.rect.zw - text_prim0.rect.xy);
+    vec2 interp_uv0 = mix(text_prim0.st.xy, text_prim0.st.zw, f0 * layer_pos.z);
     vPos1 = vec3(interp_uv0, layer_pos.z);
     vColor1 = text_prim0.color;
-    vRect1 = vec4(text_prim0.st0, text_prim0.st1);
+    vRect1 = text_prim0.st;
 
-    vec2 f1 = (layer_pos.xy - text_prim1.p0) / (text_prim1.p1 - text_prim1.p0);
-    vec2 interp_uv1 = mix(text_prim1.st0, text_prim1.st1, f1 * layer_pos.z);
+    vec2 f1 = (layer_pos.xy - text_prim1.rect.xy) / (text_prim1.rect.zw - text_prim1.rect.xy);
+    vec2 interp_uv1 = mix(text_prim1.st.xy, text_prim1.st.zw, f1 * layer_pos.z);
     vPos2 = vec3(interp_uv1, layer_pos.z);
     vColor2 = text_prim1.color;
-    vRect2 = vec4(text_prim1.st0, text_prim1.st1);
+    vRect2 = text_prim1.st;
 }

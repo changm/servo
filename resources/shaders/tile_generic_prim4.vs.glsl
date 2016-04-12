@@ -7,23 +7,23 @@ void handle_prim(uint kind, int index, TilePrimitive prim, vec3 layer_pos) {
         case PRIM_KIND_RECT: {
             vGenericPos[index] = layer_pos;
             vGenericColor[index] = prim.color;
-            vGenericRect[index] = vec4(prim.p0, prim.p1);
+            vGenericRect[index] = prim.rect;
             break;
         }
         case PRIM_KIND_TEXT: {
-            vec2 f = (layer_pos.xy - prim.p0) / (prim.p1 - prim.p0);
-            vec2 interp_uv = mix(prim.st0, prim.st1, f * layer_pos.z);
+            vec2 f = (layer_pos.xy - prim.rect.xy) / (prim.rect.zw - prim.rect.xy);
+            vec2 interp_uv = mix(prim.st.xy, prim.st.zw, f * layer_pos.z);
             vGenericPos[index] = vec3(interp_uv, layer_pos.z);
             vGenericColor[index] = prim.color;
-            vGenericRect[index] = vec4(prim.st0, prim.st1);
+            vGenericRect[index] = prim.st;
             break;
         }
         case PRIM_KIND_IMAGE: {
-            vec2 f = (layer_pos.xy - prim.p0) / (prim.p1 - prim.p0);
-            vec2 interp_uv = mix(prim.st0, prim.st1, f * layer_pos.z);
+            vec2 f = (layer_pos.xy - prim.rect.xy) / (prim.rect.zw - prim.rect.xy);
+            vec2 interp_uv = mix(prim.st.xy, prim.st.zw, f * layer_pos.z);
             vGenericPos[index] = vec3(interp_uv, layer_pos.z);
             vGenericColor[index] = prim.color;
-            vGenericRect[index] = vec4(prim.st0, prim.st1);
+            vGenericRect[index] = prim.st;
             break;
         }
     }

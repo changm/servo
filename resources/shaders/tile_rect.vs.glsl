@@ -10,5 +10,5 @@ void main(void) {
 
     vPos0 = layer_pos;
     vColor0 = tile.prim.color;
-    vRect0 = vec4(tile.prim.p0, tile.prim.p1);
+    vRect0 = tile.prim.rect;
 }

@@ -62,10 +62,8 @@ flat varying uvec4 vGenericKind1;
 #ifdef WR_VERTEX_SHADER
 
 struct TilePrimitive {
-    vec2 p0;
-    vec2 p1;
-    vec2 st0;
-    vec2 st1;
+    vec4 rect;
+    vec4 st;
     vec4 color;
 };
 

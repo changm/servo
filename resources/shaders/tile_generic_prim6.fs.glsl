@@ -2,14 +2,15 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-vec4 handle_prim(uint kind, int index) {
+vec4 handle_prim(int index, uint packed_color) {
+    uint kind = uint(vGenericPos[index].w);
     vec4 result = vec4(0, 0, 0, 0);
 
     vec2 rect_pos = vGenericPos[index].xy / vGenericPos[index].z;
     vec4 rect_rect = vGenericRect[index];
 
     if (point_in_rect(rect_pos, rect_rect.xy, rect_rect.zw)) {
-        vec4 color = unpack_color(vGenericPackedColor[index]);
+        vec4 color = unpack_color(packed_color);
         switch (kind) {
             case PRIM_KIND_RECT: {
                 result = color;
@@ -32,25 +33,22 @@ vec4 handle_prim(uint kind, int index) {
 void main(void) {
     vec3 result = vec3(1, 1, 1);
 
-    vec4 prim_color = handle_prim(vGenericKind0.x, 0);
+    vec4 prim_color = handle_prim(0, vGenericColor[0].x);
     result = mix(result, prim_color.rgb, prim_color.a);
 
-    prim_color = handle_prim(vGenericKind0.y, 1);
+    prim_color = handle_prim(1, vGenericColor[0].y);
     result = mix(result, prim_color.rgb, prim_color.a);
 
-    prim_color = handle_prim(vGenericKind0.z, 2);
+    prim_color = handle_prim(2, vGenericColor[0].z);
     result = mix(result, prim_color.rgb, prim_color.a);
 
-    prim_color = handle_prim(vGenericKind0.w, 3);
+    prim_color = handle_prim(3, vGenericColor[0].w);
     result = mix(result, prim_color.rgb, prim_color.a);
 
-    prim_color = handle_prim(vGenericKind1.x, 4);
+    prim_color = handle_prim(4, vGenericColor[1].x);
     result = mix(result, prim_color.rgb, prim_color.a);
 
-    prim_color = handle_prim(vGenericKind1.y, 5);
-    result = mix(result, prim_color.rgb, prim_color.a);
-
-    prim_color = handle_prim(vGenericKind1.z, 6);
+    prim_color = handle_prim(5, vGenericColor[1].y);
     result = mix(result, prim_color.rgb, prim_color.a);
 
     oFragColor = vec4(result,1);

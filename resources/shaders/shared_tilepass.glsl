@@ -37,12 +37,9 @@ varying vec3 vPos2;
 flat varying vec4 vColor2;
 flat varying vec4 vRect2;
 
-varying vec3 vGenericPos[7];
-flat varying vec4 vGenericColor[4];             // Only used by gen4
-flat varying uint vGenericPackedColor[7];       // Only used by gen7
-flat varying vec4 vGenericRect[7];
-flat varying uvec4 vGenericKind0;
-flat varying uvec4 vGenericKind1;
+varying vec4 vGenericPos[6];
+flat varying uvec4 vGenericColor[2];
+flat varying vec4 vGenericRect[6];
 
 //======================================================================================
 // Shared types and constants
@@ -119,16 +116,16 @@ layout(std140) uniform Tiles_L4P4 {
     L4P4Tile tiles_l4p4[128];
 };
 
-struct L4P7Tile {
+struct L4P6Tile {
     uvec4 rect;
     uvec4 layer_info;
     uvec4 prim_info0;
     uvec4 prim_info1;
-    TilePrimitive prims[7];
+    TilePrimitive prims[6];
 };
 
-layout(std140) uniform Tiles_L4P7 {
-    L4P7Tile tiles_l4p7[128];
+layout(std140) uniform Tiles_L4P6 {
+    L4P6Tile tiles_l4p6[128];
 };
 
 struct Layer {

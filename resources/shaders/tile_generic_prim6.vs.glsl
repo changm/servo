@@ -33,8 +33,8 @@ void handle_prim(uint kind, int index, TilePrimitive prim, vec3 layer_pos, out u
 
 void main(void) {
     L4P6Tile tile = tiles_l4p6[gl_InstanceID];
-    vec2 pos = write_vertex(tile.rect);
-    vec3 layer_pos = get_layer_pos(pos, tile.layer_info.x);
+    vec2 pos = write_vertex(tile.target_rect, tile.screen_rect);
+    vec3 layer_pos = get_layer_pos(pos, tile.layer_info0.x);
 
     handle_prim(tile.prim_info0.x, 0, tile.prims[0], layer_pos, vGenericColor[0].x);
     handle_prim(tile.prim_info0.y, 1, tile.prims[1], layer_pos, vGenericColor[0].y);

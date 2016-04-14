@@ -192,6 +192,7 @@ pub struct Opts {
 
     /// True to show webrender profiling stats on screen.
     pub wr_tile_size: Size2D<i32>,
+    pub allow_splitting: bool,
 
     /// True if WebRender should use multisample antialiasing.
     pub use_msaa: bool,
@@ -519,6 +520,7 @@ pub fn default_opts() -> Opts {
         profile_dir: None,
         full_backtraces: false,
         wr_tile_size: Size2D::new(20, 30),
+        allow_splitting: true,
     }
 }
 
@@ -531,7 +533,8 @@ pub fn from_cmdline_args(args: &[String]) -> ArgumentParsingResult {
     opts.optopt("o", "output", "Output file", "output.png");
     opts.optopt("s", "size", "Size of tiles", "512");
     opts.optopt("", "device-pixel-ratio", "Device pixels per px", "");
-    opts.optopt("t", "threads", "Number of paint threads", "1");
+    //opts.optopt("t", "threads", "Number of paint threads", "1");
+    opts.optflag("t", "split", "Disable tile splitting");
     opts.optflagopt("p", "profile", "Profiler flag and output interval", "10");
     opts.optflagopt("m", "memory-profile", "Memory profiler flag and output interval", "10");
     opts.optflag("x", "exit", "Exit after load flag");
@@ -650,11 +653,13 @@ pub fn from_cmdline_args(args: &[String]) -> ArgumentParsingResult {
             .unwrap_or_else(|err| args_fail(&format!("Error parsing option: --device-pixel-ratio ({})", err)))
     );
 
+    let mut paint_threads = 1;
+    /*
     let mut paint_threads: usize = match opt_match.opt_str("t") {
         Some(paint_threads_str) => paint_threads_str.parse()
             .unwrap_or_else(|err| args_fail(&format!("Error parsing option: -t ({})", err))),
         None => cmp::max(num_cpus::get() * 3 / 4, 1),
-    };
+    };*/
 
     // If only the flag is present, default to a 5 second period for both profilers.
     let time_profiler_period = opt_match.opt_default("p", "5").map(|period| {
@@ -713,6 +718,8 @@ pub fn from_cmdline_args(args: &[String]) -> ArgumentParsingResult {
             Size2D::typed(800, 600)
         }
     };
+
+    let allow_splitting = !opt_match.opt_present("t");
 
     let wr_tile_size = match opt_match.opt_str("tile") {
         Some(res_string) => {
@@ -819,6 +826,7 @@ pub fn from_cmdline_args(args: &[String]) -> ArgumentParsingResult {
         profile_dir: opt_match.opt_str("profile-dir"),
         full_backtraces: debug_options.full_backtraces,
         wr_tile_size: wr_tile_size,
+        allow_splitting: allow_splitting,
     };
 
     set_defaults(opts);

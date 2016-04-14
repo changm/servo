@@ -4,7 +4,7 @@
 
 void main(void) {
     L4P2Tile tile = tiles_l4p2[gl_InstanceID];
-    vec2 pos = write_vertex(tile.rect);
+    vec2 pos = write_vertex(tile.target_rect, tile.screen_rect);
 
     vec3 layer_pos = get_layer_pos(pos, tile.layer_info.x);
 

@@ -4,5 +4,5 @@
 
 void main(void) {
 	EmptyTile tile = tiles_empty[gl_InstanceID];
-    write_vertex(tile.rect);
+    write_vertex(tile.rect, tile.rect);
 }

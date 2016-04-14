@@ -14,6 +14,8 @@
 // Fragment shader attributes and uniforms
 //======================================================================================
 #ifdef WR_FRAGMENT_SHADER
+    uniform sampler2D sTiling;
+    uniform vec4 uInitialColor;
 #endif
 
 //======================================================================================
@@ -41,6 +43,9 @@ varying vec4 vGenericPos[6];
 flat varying uvec4 vGenericColor[2];
 flat varying vec4 vGenericRect[6];
 
+varying vec2 vCompositeUv0;
+varying vec2 vCompositeUv1;
+
 //======================================================================================
 // Shared types and constants
 //======================================================================================
@@ -64,6 +69,16 @@ struct TilePrimitive {
     vec4 color;
 };
 
+struct CompositeTile {
+    uvec4 rect;
+    vec4 uv_rect0;
+    vec4 uv_rect1;
+};
+
+layout(std140) uniform Tiles_Composite {
+    CompositeTile tiles_composite[32];
+};
+
 struct EmptyTile {
     uvec4 rect;
 };
@@ -73,7 +88,8 @@ layout(std140) uniform Tiles_Empty {
 };
 
 struct L4P1Tile {
-    uvec4 rect;
+    uvec4 target_rect;
+    uvec4 screen_rect;
     uvec4 layer_info;
     uvec4 prim_info;
     TilePrimitive prim;
@@ -84,7 +100,8 @@ layout(std140) uniform Tiles_L4P1 {
 };
 
 struct L4P2Tile {
-    uvec4 rect;
+    uvec4 target_rect;
+    uvec4 screen_rect;
     uvec4 layer_info;
     uvec4 prim_info;
     TilePrimitive prims[2];
@@ -95,7 +112,8 @@ layout(std140) uniform Tiles_L4P2 {
 };
 
 struct L4P3Tile {
-    uvec4 rect;
+    uvec4 target_rect;
+    uvec4 screen_rect;
     uvec4 layer_info;
     uvec4 prim_info;
     TilePrimitive prims[3];
@@ -106,7 +124,8 @@ layout(std140) uniform Tiles_L4P3 {
 };
 
 struct L4P4Tile {
-    uvec4 rect;
+    uvec4 target_rect;
+    uvec4 screen_rect;
     uvec4 layer_info;
     uvec4 prim_info;
     TilePrimitive prims[4];
@@ -117,8 +136,10 @@ layout(std140) uniform Tiles_L4P4 {
 };
 
 struct L4P6Tile {
-    uvec4 rect;
-    uvec4 layer_info;
+    uvec4 target_rect;
+    uvec4 screen_rect;
+    uvec4 layer_info0;
+    uvec4 layer_info1;
     uvec4 prim_info0;
     uvec4 prim_info1;
     TilePrimitive prims[6];
@@ -148,10 +169,11 @@ layout(std140) uniform Layers {
 //======================================================================================
 #ifdef WR_VERTEX_SHADER
 
-vec2 write_vertex(vec4 tile_rect) {
-    vec4 pos = vec4(tile_rect.xy + aPosition.xy * tile_rect.zw, 0, 1);
-    gl_Position = uTransform * pos;
-    return pos.xy;
+vec2 write_vertex(vec4 target_rect, vec4 screen_rect) {
+    vec4 actual_pos = vec4(target_rect.xy + aPosition.xy * target_rect.zw, 0, 1);
+    vec2 virtual_pos = screen_rect.xy + aPosition.xy * screen_rect.zw;
+    gl_Position = uTransform * actual_pos;
+    return virtual_pos;
 }
 
 uint pack_color(vec4 color) {
@@ -203,12 +225,21 @@ vec3 get_layer_pos(vec2 pos, uint layer_index) {
 //======================================================================================
 #ifdef WR_FRAGMENT_SHADER
 
+vec4 fetch_initial_color() {
+    return uInitialColor;
+}
+
 vec4 unpack_color(uint color) {
     float r = float(color & uint(0x000000ff)) / 255.0;
     float g = float((color & uint(0x0000ff00)) >> 8) / 255.0;
     float b = float((color & uint(0x00ff0000)) >> 16) / 255.0;
     float a = float((color & uint(0xff000000)) >> 24) / 255.0;
     return vec4(r, g, b, a);
+}
+
+float inside_box(vec2 p, vec2 p0, vec2 p1) {
+    vec2 s = step(p0, p) - step(p1, p);
+    return s.x * s.y;
 }
 
 bool point_in_rect(vec2 p, vec2 p0, vec2 p1) {

@@ -31,19 +31,19 @@ vec4 handle_prim(int index, uint packed_color) {
 }
 
 void main(void) {
-    vec3 result = vec3(1, 1, 1);
+    vec4 result = fetch_initial_color();
 
     vec4 prim_color = handle_prim(0, vGenericColor[0].x);
-    result = mix(result, prim_color.rgb, prim_color.a);
+    result = mix(result, prim_color, prim_color.a);
 
     prim_color = handle_prim(1, vGenericColor[0].y);
-    result = mix(result, prim_color.rgb, prim_color.a);
+    result = mix(result, prim_color, prim_color.a);
 
     prim_color = handle_prim(2, vGenericColor[0].z);
-    result = mix(result, prim_color.rgb, prim_color.a);
+    result = mix(result, prim_color, prim_color.a);
 
     prim_color = handle_prim(3, vGenericColor[0].w);
-    result = mix(result, prim_color.rgb, prim_color.a);
+    result = mix(result, prim_color, prim_color.a);
 
-    oFragColor = vec4(result,1);
+    oFragColor = result;
 }

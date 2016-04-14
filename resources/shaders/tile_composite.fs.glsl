@@ -5,13 +5,11 @@
 void main(void) {
     vec4 result = fetch_initial_color();
 
-    vec2 pos = vPos0.xy / vPos0.z;
-    vec4 rect = vRect0;
-    vec4 color = vColor0;
+    vec4 c0 = texture(sTiling, vec2(vCompositeUv0.x, 1.0 - vCompositeUv0.y));
+    result = mix(result, c0, c0.a);
 
-    if (point_in_rect(pos, rect.xy, rect.zw)) {
-        result = mix(result, color, color.a);
-    }
+    vec4 c1 = texture(sTiling, vec2(vCompositeUv1.x, 1.0 - vCompositeUv1.y));
+    result = mix(result, c1, c1.a);
 
     oFragColor = result;
 }

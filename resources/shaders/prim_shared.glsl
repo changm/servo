@@ -31,9 +31,9 @@
 varying vec2 vUv;
 flat varying vec4 vColor;
 
-varying vec4 vBlendingPos[5];
+varying vec4 vBlendingPos[6];
 flat varying uvec4 vBlendingColor[2];
-flat varying vec4 vBlendingRect[5];
+flat varying vec4 vBlendingRect[6];
 
 //======================================================================================
 // Shared types and constants

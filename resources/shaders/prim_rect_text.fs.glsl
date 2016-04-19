@@ -8,8 +8,7 @@ void main(void) {
 
     vec4 rect_color = vec4(1,1,1,1);
     if (point_in_rect(rect_pos, rect_rect.xy, rect_rect.zw)) {
-        uint packed_color = vBlendingColor[0].x;
-        rect_color = unpack_color(packed_color);
+        rect_color = vBlendingColor[0];
     }
 
     vec4 text_color = vec4(vColor.rgb, vColor.a * texture(sMask, vUv).a);

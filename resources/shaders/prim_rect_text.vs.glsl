@@ -4,7 +4,7 @@
 
 void vs(vec2 pos, Command cmd, Primitive main_prim) {
     vUv = mix(main_prim.st.xy, main_prim.st.zw, aPosition.xy);
-    vColor = main_prim.color;
+    vColor = main_prim.color0;
 
     write_rect(0, cmd.prim_indices[0].y, cmd.layer_indices[0].y, pos);
 }

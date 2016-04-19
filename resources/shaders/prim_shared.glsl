@@ -29,11 +29,11 @@
 //======================================================================================
 
 varying vec2 vUv;
-flat varying vec4 vColor;
+varying vec4 vColor;
 
-varying vec4 vBlendingPos[6];
-flat varying uvec4 vBlendingColor[2];
-flat varying vec4 vBlendingRect[6];
+varying vec4 vBlendingPos[5];
+varying vec4 vBlendingColor[5];
+flat varying vec4 vBlendingRect[5];
 
 //======================================================================================
 // Shared types and constants
@@ -53,10 +53,15 @@ flat varying vec4 vBlendingRect[6];
 //======================================================================================
 #ifdef WR_VERTEX_SHADER
 
+#define RECT_KIND_SOLID                     uint(0)
+#define RECT_KIND_HORIZONTAL_GRADIENT       uint(1)
+#define RECT_KIND_VERTICAL_GRADIENT         uint(2)
+
 struct Primitive {
     vec4 rect;
     vec4 st;
-    vec4 color;
+    vec4 color0;
+    vec4 color1;
     uvec4 info;
 };
 
@@ -102,14 +107,6 @@ vec2 write_simple_vertex(vec4 rect, mat4 transform) {
     return pos.xy;
 }
 
-uint pack_color(vec4 color) {
-    uint r = uint(color.r * 255.0) <<  0;
-    uint g = uint(color.g * 255.0) <<  8;
-    uint b = uint(color.b * 255.0) << 16;
-    uint a = uint(color.a * 255.0) << 24;
-    return r | g | b | a;
-}
-
 bool ray_plane(vec3 normal, vec3 point, vec3 ray_origin, vec3 ray_dir, out float t)
 {
     float denom = dot(normal, ray_dir);
@@ -144,16 +141,34 @@ vec3 get_layer_pos(vec2 pos, uint layer_index) {
     return local_pos.xyw;
 }
 
+vec4 get_rect_color(Primitive prim) {
+    vec4 result;
+
+    switch (prim.info.y) {
+        case RECT_KIND_SOLID:
+            result = prim.color0;
+            break;
+        case RECT_KIND_HORIZONTAL_GRADIENT:
+            result = mix(prim.color0, prim.color1, aPosition.x);
+            break;
+        case RECT_KIND_VERTICAL_GRADIENT:
+            result = mix(prim.color0, prim.color1, aPosition.y);
+            break;
+    }
+
+    return result;
+}
+
 void write_rect(int location, uint prim_index, uint layer_index, vec2 pos) {
     Primitive prim = primitives[prim_index];
     // TODO(gw): This can be simplified if VS time becomes a bottleneck!
     vec3 layer_pos = get_layer_pos(pos, layer_index);
     vBlendingPos[location].xyz = layer_pos;
-    vBlendingColor[location].x = pack_color(prim.color);
+    vBlendingColor[location] = prim.color0;
     vBlendingRect[location] = prim.rect;
 }
 
-void write_generic(int location, uint prim_index, uint layer_index, vec2 pos, out uint out_color) {
+void write_generic(int location, uint prim_index, uint layer_index, vec2 pos) {
     if (prim_index == INVALID_PRIM_INDEX) {
         vBlendingPos[location].w = float(PRIM_KIND_INVALID);
     } else {
@@ -168,7 +183,7 @@ void write_generic(int location, uint prim_index, uint layer_index, vec2 pos, ou
         switch (prim_kind) {
             case PRIM_KIND_RECT: {
                 vBlendingPos[location].xyz = layer_pos;
-                out_color = pack_color(prim.color);
+                vBlendingColor[location] = prim.color0;
                 vBlendingRect[location] = prim.rect;
                 break;
             }
@@ -176,7 +191,7 @@ void write_generic(int location, uint prim_index, uint layer_index, vec2 pos, ou
                 vec2 f = (layer_pos.xy - prim.rect.xy) / (prim.rect.zw - prim.rect.xy);
                 vec2 interp_uv = mix(prim.st.xy, prim.st.zw, f * layer_pos.z);
                 vBlendingPos[location].xyz = vec3(interp_uv, layer_pos.z);
-                out_color = pack_color(prim.color);
+                vBlendingColor[location] = prim.color0;
                 vBlendingRect[location] = prim.st;
                 break;
             }
@@ -184,7 +199,7 @@ void write_generic(int location, uint prim_index, uint layer_index, vec2 pos, ou
                 vec2 f = (layer_pos.xy - prim.rect.xy) / (prim.rect.zw - prim.rect.xy);
                 vec2 interp_uv = mix(prim.st.xy, prim.st.zw, f * layer_pos.z);
                 vBlendingPos[location].xyz = vec3(interp_uv, layer_pos.z);
-                out_color = pack_color(prim.color);
+                vBlendingColor[location] = prim.color0;
                 vBlendingRect[location] = prim.st;
                 break;
             }
@@ -219,14 +234,6 @@ vec4 fetch_initial_color() {
     //return uInitialColor;
 }
 
-vec4 unpack_color(uint color) {
-    float r = float(color & uint(0x000000ff)) / 255.0;
-    float g = float((color & uint(0x0000ff00)) >> 8) / 255.0;
-    float b = float((color & uint(0x00ff0000)) >> 16) / 255.0;
-    float a = float((color & uint(0xff000000)) >> 24) / 255.0;
-    return vec4(r, g, b, a);
-}
-
 bool point_in_rect(vec2 p, vec2 p0, vec2 p1) {
     return p.x >= p0.x &&
            p.y >= p0.y &&
@@ -234,15 +241,15 @@ bool point_in_rect(vec2 p, vec2 p0, vec2 p1) {
            p.y <= p1.y;
 }
 
-vec4 handle_prim(int location, uint packed_color) {
+vec4 handle_prim(int location) {
     uint kind = uint(vBlendingPos[location].w);
     vec4 result = vec4(0, 0, 0, 0);
 
     vec2 rect_pos = vBlendingPos[location].xy / vBlendingPos[location].z;
     vec4 rect_rect = vBlendingRect[location];
+    vec4 color = vBlendingColor[location];
 
     if (point_in_rect(rect_pos, rect_rect.xy, rect_rect.zw)) {
-        vec4 color = unpack_color(packed_color);
         switch (kind) {
             case PRIM_KIND_RECT: {
                 result = color;

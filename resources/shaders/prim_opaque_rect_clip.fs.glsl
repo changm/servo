@@ -3,6 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 void main(void) {
-	EmptyTile tile = tiles_empty[gl_InstanceID];
-    write_vertex(tile.rect, tile.rect);
+    do_clip(vPrimPos0.xy);
+    oFragColor = vPrimColor0;
 }

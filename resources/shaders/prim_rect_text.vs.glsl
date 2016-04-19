@@ -3,8 +3,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 void vs(vec2 pos, Command cmd, Primitive main_prim) {
-    vUv = mix(main_prim.st.xy, main_prim.st.zw, aPosition.xy);
-    vColor = main_prim.color0;
+    vPrimPos0.xy = mix(main_prim.st.xy, main_prim.st.zw, aPosition.xy);
+    vPrimColor0 = main_prim.color0;
 
-    write_rect(0, cmd.prim_indices[0].y, cmd.layer_indices[0].y, pos);
+    write_rect(cmd.prim_indices.y,
+    		   cmd.layer_indices.y,
+    		   pos,
+    		   vPrimPos1.xyz,
+    		   vPrimColor1,
+    		   vPrimRect1);
 }

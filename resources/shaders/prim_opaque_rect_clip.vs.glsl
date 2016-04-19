@@ -2,7 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-void main(void) {
-	EmptyTile tile = tiles_empty[gl_InstanceID];
-    write_vertex(tile.rect, tile.rect);
+void vs(vec2 pos, Command cmd, Primitive main_prim) {
+    vPrimColor0 = get_rect_color(main_prim);
+    vPrimPos0.xyz = get_layer_pos(pos, cmd.layer_indices.x);
+    write_clip(cmd.clip_info.x);
 }

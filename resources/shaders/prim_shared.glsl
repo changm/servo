@@ -28,12 +28,24 @@
 // Interpolator definitions
 //======================================================================================
 
-varying vec2 vUv;
-varying vec4 vColor;
+varying vec4 vPrimPos0;
+varying vec4 vPrimColor0;
+flat varying vec4 vPrimRect0;
 
-varying vec4 vBlendingPos[5];
-varying vec4 vBlendingColor[5];
-flat varying vec4 vBlendingRect[5];
+varying vec4 vPrimPos1;
+varying vec4 vPrimColor1;
+flat varying vec4 vPrimRect1;
+
+varying vec4 vPrimPos2;
+varying vec4 vPrimColor2;
+flat varying vec4 vPrimRect2;
+
+varying vec4 vPrimPos3;
+varying vec4 vPrimColor3;
+flat varying vec4 vPrimRect3;
+
+flat varying vec4 vClipRect;
+flat varying vec4 vClipRadii;
 
 //======================================================================================
 // Shared types and constants
@@ -72,8 +84,22 @@ struct Layer {
 };
 
 struct Command {
-    uvec4 prim_indices[2];
-    uvec4 layer_indices[2];
+    uvec4 prim_indices;
+    uvec4 layer_indices;
+    uvec4 clip_info;
+};
+
+struct ClipCorner {
+    vec4 position;
+    vec4 outer_inner_radii;
+};
+
+struct Clip {
+    vec4 rect;
+    ClipCorner top_left;
+    ClipCorner top_right;
+    ClipCorner bottom_left;
+    ClipCorner bottom_right;
 };
 
 layout(std140) uniform Layers {
@@ -86,6 +112,10 @@ layout(std140) uniform Commands {
 
 layout(std140) uniform Primitives {
     Primitive primitives[16];
+};
+
+layout(std140) uniform Clips {
+    Clip clips[16];
 };
 
 #endif
@@ -102,9 +132,18 @@ layout(std140) uniform Primitives {
 #define INVALID_PRIM_INDEX      uint(0xffffffff)
 
 vec2 write_simple_vertex(vec4 rect, mat4 transform) {
-    vec4 pos = vec4(mix(rect.xy, rect.zw, aPosition.xy), 0, 1);
-    gl_Position = uTransform * transform * pos;
-    return pos.xy;
+    vec4 pos = transform * vec4(mix(rect.xy, rect.zw, aPosition.xy), 0, 1);
+    gl_Position = uTransform * pos;
+    return pos.xy / pos.w;
+}
+
+void write_clip(uint clip_index) {
+    Clip clip = clips[clip_index];
+    vClipRect = clip.rect;
+    vClipRadii = vec4(clip.top_left.outer_inner_radii.x,
+                      clip.top_right.outer_inner_radii.x,
+                      clip.bottom_left.outer_inner_radii.x,
+                      clip.bottom_right.outer_inner_radii.x);
 }
 
 bool ray_plane(vec3 normal, vec3 point, vec3 ray_origin, vec3 ray_dir, out float t)
@@ -120,7 +159,7 @@ bool ray_plane(vec3 normal, vec3 point, vec3 ray_origin, vec3 ray_dir, out float
 }
 
 vec4 untransform(vec2 ref, vec3 n, vec3 a, mat4 inv_transform) {
-    vec3 p = vec3(ref, -100.0);
+    vec3 p = vec3(ref, -10000.0);
     vec3 d = vec3(0, 0, 1.0);
 
     float t;
@@ -159,48 +198,57 @@ vec4 get_rect_color(Primitive prim) {
     return result;
 }
 
-void write_rect(int location, uint prim_index, uint layer_index, vec2 pos) {
+void write_rect(uint prim_index,
+                uint layer_index,
+                vec2 pos,
+                out vec3 out_pos,
+                out vec4 out_color,
+                out vec4 out_rect) {
     Primitive prim = primitives[prim_index];
     // TODO(gw): This can be simplified if VS time becomes a bottleneck!
     vec3 layer_pos = get_layer_pos(pos, layer_index);
-    vBlendingPos[location].xyz = layer_pos;
-    vBlendingColor[location] = prim.color0;
-    vBlendingRect[location] = prim.rect;
+    out_pos = layer_pos;
+    out_color = prim.color0;
+    out_rect = prim.rect;
 }
 
-void write_generic(int location, uint prim_index, uint layer_index, vec2 pos) {
+void write_generic(uint prim_index,
+                   uint layer_index,
+                   vec2 pos,
+                   out vec4 out_pos,
+                   out vec4 out_color,
+                   out vec4 out_rect) {
     if (prim_index == INVALID_PRIM_INDEX) {
-        vBlendingPos[location].w = float(PRIM_KIND_INVALID);
+        out_pos.w = float(PRIM_KIND_INVALID);
     } else {
         Primitive prim = primitives[prim_index];
         uint prim_kind = prim.info.x;
 
         // TODO(gw): This can be simplified if VS time becomes a bottleneck!
         vec3 layer_pos = get_layer_pos(pos, layer_index);
-
-        vBlendingPos[location].w = float(prim_kind);
+        out_pos.w = float(prim_kind);
 
         switch (prim_kind) {
             case PRIM_KIND_RECT: {
-                vBlendingPos[location].xyz = layer_pos;
-                vBlendingColor[location] = prim.color0;
-                vBlendingRect[location] = prim.rect;
+                out_pos.xyz = layer_pos;
+                out_color = prim.color0;
+                out_rect = prim.rect;
                 break;
             }
             case PRIM_KIND_TEXT: {
                 vec2 f = (layer_pos.xy - prim.rect.xy) / (prim.rect.zw - prim.rect.xy);
                 vec2 interp_uv = mix(prim.st.xy, prim.st.zw, f * layer_pos.z);
-                vBlendingPos[location].xyz = vec3(interp_uv, layer_pos.z);
-                vBlendingColor[location] = prim.color0;
-                vBlendingRect[location] = prim.st;
+                out_pos.xyz = vec3(interp_uv, layer_pos.z);
+                out_color = prim.color0;
+                out_rect = prim.st;
                 break;
             }
             case PRIM_KIND_IMAGE: {
                 vec2 f = (layer_pos.xy - prim.rect.xy) / (prim.rect.zw - prim.rect.xy);
                 vec2 interp_uv = mix(prim.st.xy, prim.st.zw, f * layer_pos.z);
-                vBlendingPos[location].xyz = vec3(interp_uv, layer_pos.z);
-                vBlendingColor[location] = prim.color0;
-                vBlendingRect[location] = prim.st;
+                out_pos.xyz = vec3(interp_uv, layer_pos.z);
+                out_color = prim.color0;
+                out_rect = prim.st;
                 break;
             }
         }
@@ -212,8 +260,8 @@ void vs(vec2 pos, Command cmd, Primitive main_prim);
 void main() {
     Command cmd = commands[gl_InstanceID];
 
-    uint main_prim_index = cmd.prim_indices[0].x;
-    uint main_layer_index = cmd.layer_indices[0].x;
+    uint main_prim_index = cmd.prim_indices.x;
+    uint main_layer_index = cmd.layer_indices.x;
 
     Primitive main_prim = primitives[main_prim_index];
     Layer main_layer = layers[main_layer_index];
@@ -241,15 +289,36 @@ bool point_in_rect(vec2 p, vec2 p0, vec2 p1) {
            p.y <= p1.y;
 }
 
-vec4 handle_prim(int location) {
-    uint kind = uint(vBlendingPos[location].w);
+void do_clip(vec2 pos) {
+    vec2 ref_tl = vClipRect.xy + vec2(vClipRadii.x, vClipRadii.x);
+    vec2 ref_tr = vClipRect.xy + vec2(vClipRect.z - vClipRadii.y, vClipRadii.y);
+    vec2 ref_bl = vClipRect.xy + vec2(vClipRadii.z, vClipRect.w - vClipRadii.z);
+    vec2 ref_br = vClipRect.xy + vec2(vClipRect.z - vClipRadii.w, vClipRect.w - vClipRadii.w);
+
+    float d_tl = distance(pos, ref_tl);
+    float d_tr = distance(pos, ref_tr);
+    float d_bl = distance(pos, ref_bl);
+    float d_br = distance(pos, ref_br);
+
+    bool out0 = pos.x < ref_tl.x && pos.y < ref_tl.y && d_tl > vClipRadii.x;
+    bool out1 = pos.x > ref_tr.x && pos.y < ref_tr.y && d_tr > vClipRadii.y;
+    bool out2 = pos.x < ref_bl.x && pos.y > ref_bl.y && d_bl > vClipRadii.z;
+    bool out3 = pos.x > ref_br.x && pos.y > ref_br.y && d_br > vClipRadii.w;
+
+    if (out0 || out1 || out2 || out3) {
+        discard;
+    }
+}
+
+vec4 handle_prim(vec4 pos,
+                 vec4 color,
+                 vec4 rect) {
+    uint kind = uint(pos.w);
     vec4 result = vec4(0, 0, 0, 0);
 
-    vec2 rect_pos = vBlendingPos[location].xy / vBlendingPos[location].z;
-    vec4 rect_rect = vBlendingRect[location];
-    vec4 color = vBlendingColor[location];
+    vec2 rect_pos = pos.xy / pos.z;
 
-    if (point_in_rect(rect_pos, rect_rect.xy, rect_rect.zw)) {
+    if (point_in_rect(rect_pos, rect.xy, rect.zw)) {
         switch (kind) {
             case PRIM_KIND_RECT: {
                 result = color;

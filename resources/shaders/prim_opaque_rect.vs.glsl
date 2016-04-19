@@ -3,5 +3,5 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 void vs(vec2 pos, Command cmd, Primitive main_prim) {
-    vColor = get_rect_color(main_prim);
+    vPrimColor0 = get_rect_color(main_prim);
 }

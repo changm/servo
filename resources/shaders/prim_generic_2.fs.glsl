@@ -5,10 +5,10 @@
 void main(void) {
     vec4 result = fetch_initial_color();
 
-    vec4 prim_color = handle_prim(1);
+    vec4 prim_color = handle_prim(vPrimPos1, vPrimColor1, vPrimRect1);
     result = mix(result, prim_color, prim_color.a);
 
-    vec4 main_color = handle_prim(0);
+    vec4 main_color = handle_prim(vPrimPos0, vPrimColor0, vPrimRect0);
     result = mix(result, main_color, main_color.a);
 
     oFragColor = result;

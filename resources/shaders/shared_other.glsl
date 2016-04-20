@@ -8,6 +8,11 @@
 #ifdef WR_VERTEX_SHADER
     in vec4 aColorTexCoordRectTop;
     in vec4 aColorRectTL;
+
+    // box-shadow
+    in vec4 aBorderPosition;
+	in vec4 aBorderRadii;
+	in float aBlurRadius;
 #endif
 
 //======================================================================================
@@ -24,6 +29,12 @@
 varying vec2 vColorTexCoord;
 varying vec4 vColor;
 
+// box_shadow
+varying vec2 vPosition;
+varying vec4 vBorderPosition;
+varying vec4 vBorderRadii;
+varying float vBlurRadius;
+
 //======================================================================================
 // VS only types and UBOs
 //======================================================================================
@@ -31,3 +42,14 @@ varying vec4 vColor;
 //======================================================================================
 // VS only functions
 //======================================================================================
+
+//======================================================================================
+// FS only functions
+//======================================================================================
+#ifdef WR_FRAGMENT_SHADER
+
+void SetFragColor(vec4 color) {
+    oFragColor = color;
+}
+
+#endif

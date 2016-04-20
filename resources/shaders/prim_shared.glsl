@@ -105,19 +105,19 @@ struct Clip {
 };
 
 layout(std140) uniform Layers {
-    Layer layers[16];
+    Layer layers[256];
 };
 
 layout(std140) uniform Commands {
-    Command commands[16];
+    Command commands[512];
 };
 
 layout(std140) uniform Primitives {
-    Primitive primitives[16];
+    Primitive primitives[512];
 };
 
 layout(std140) uniform Clips {
-    Clip clips[16];
+    Clip clips[256];
 };
 
 #endif
@@ -208,26 +208,32 @@ vec3 get_layer_pos(vec2 pos, uint layer_index) {
     return local_pos.xyw;
 }
 
-vec4 get_rect_color(Primitive prim) {
+vec4 get_rect_color(Primitive prim, vec3 layer_pos) {
     vec4 result;
 
     switch (prim.info.y) {
-        case RECT_KIND_SOLID:
+        case RECT_KIND_SOLID: {
             result = prim.color0;
             break;
-        case RECT_KIND_HORIZONTAL_GRADIENT:
-            result = mix(prim.color0, prim.color1, aPosition.x);
+        }
+        case RECT_KIND_HORIZONTAL_GRADIENT: {
+            float f = (layer_pos.x - prim.rect.x) / (prim.rect.z - prim.rect.x);
+            result = mix(prim.color0, prim.color1, f);
             break;
-        case RECT_KIND_VERTICAL_GRADIENT:
-            result = mix(prim.color0, prim.color1, aPosition.y);
+        }
+        case RECT_KIND_VERTICAL_GRADIENT: {
+            float f = (layer_pos.y - prim.rect.y) / (prim.rect.w - prim.rect.y);
+            result = mix(prim.color0, prim.color1, f);
             break;
-        case RECT_KIND_BORDER_CORNER:
+        }
+        case RECT_KIND_BORDER_CORNER: {
             if (aPosition.z == 0.0) {
                 result = prim.color0;
             } else {
                 result = prim.color1;
             }
             break;
+        }
     }
 
     return result;
@@ -243,7 +249,7 @@ void write_rect(uint prim_index,
     // TODO(gw): This can be simplified if VS time becomes a bottleneck!
     vec3 layer_pos = get_layer_pos(pos, layer_index);
     out_pos = layer_pos;
-    out_color = prim.color0;
+    out_color = get_rect_color(prim, layer_pos);
     out_rect = prim.rect;
 }
 
@@ -267,7 +273,7 @@ void write_generic(uint prim_index,
         switch (prim_kind) {
             case PRIM_KIND_RECT: {
                 out_pos.xyz = layer_pos;
-                out_color = prim.color0;
+                out_color = get_rect_color(prim, layer_pos);
                 out_rect = prim.rect;
                 break;
             }
@@ -290,7 +296,7 @@ void write_generic(uint prim_index,
             case PRIM_KIND_BORDER_CORNER: {
                 write_border_clip(clip_index, prim.info.z);
                 out_pos.xyz = layer_pos;
-                out_color = get_rect_color(prim);
+                out_color = get_rect_color(prim, layer_pos);
                 out_rect = prim.rect;
             }
         }

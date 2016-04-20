@@ -52,10 +52,9 @@ flat varying vec4 vClipParams;
 //======================================================================================
 #define PRIM_KIND_RECT              uint(0)
 #define PRIM_KIND_IMAGE             uint(1)
-#define PRIM_KIND_GRADIENT          uint(2)
-#define PRIM_KIND_TEXT              uint(3)
-#define PRIM_KIND_BORDER_CORNER     uint(4)
-#define PRIM_KIND_INVALID           uint(5)
+#define PRIM_KIND_TEXT              uint(2)
+#define PRIM_KIND_BORDER_CORNER     uint(3)
+#define PRIM_KIND_INVALID           uint(4)
 
 //======================================================================================
 // Shared types and UBOs

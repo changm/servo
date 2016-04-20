@@ -2,15 +2,19 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-void vs(vec2 pos, Command cmd, Primitive main_prim) {
+void vs(Command cmd, Primitive main_prim, Layer main_layer) {
+    vec2 pos = write_complex_vertex(main_prim, main_layer);
+
     write_generic(cmd.prim_indices.x,
     			  cmd.layer_indices.x,
+                  cmd.clip_info.x,
     			  pos,
     			  vPrimPos0,
     			  vPrimColor0,
     			  vPrimRect0);
     write_generic(cmd.prim_indices.y,
     			  cmd.layer_indices.y,
+                  INVALID_CLIP_INDEX,
     			  pos,
     			  vPrimPos1,
     			  vPrimColor1,

@@ -50,11 +50,12 @@ flat varying vec4 vClipRadii;
 //======================================================================================
 // Shared types and constants
 //======================================================================================
-#define PRIM_KIND_RECT      uint(0)
-#define PRIM_KIND_IMAGE     uint(1)
-#define PRIM_KIND_GRADIENT  uint(2)
-#define PRIM_KIND_TEXT      uint(3)
-#define PRIM_KIND_INVALID   uint(4)
+#define PRIM_KIND_RECT              uint(0)
+#define PRIM_KIND_IMAGE             uint(1)
+#define PRIM_KIND_GRADIENT          uint(2)
+#define PRIM_KIND_TEXT              uint(3)
+#define PRIM_KIND_BORDER_CORNER     uint(4)
+#define PRIM_KIND_INVALID           uint(5)
 
 //======================================================================================
 // Shared types and UBOs
@@ -68,6 +69,7 @@ flat varying vec4 vClipRadii;
 #define RECT_KIND_SOLID                     uint(0)
 #define RECT_KIND_HORIZONTAL_GRADIENT       uint(1)
 #define RECT_KIND_VERTICAL_GRADIENT         uint(2)
+#define RECT_KIND_BORDER_CORNER             uint(3)
 
 struct Primitive {
     vec4 rect;
@@ -130,12 +132,12 @@ layout(std140) uniform Clips {
 #ifdef WR_VERTEX_SHADER
 
 #define INVALID_PRIM_INDEX      uint(0xffffffff)
+#define INVALID_CLIP_INDEX      uint(0xffffffff)
 
-vec2 write_simple_vertex(vec4 rect, mat4 transform) {
-    vec4 pos = transform * vec4(mix(rect.xy, rect.zw, aPosition.xy), 0, 1);
-    gl_Position = uTransform * pos;
-    return pos.xy / pos.w;
-}
+#define PRIM_ROTATION_0         uint(0)
+#define PRIM_ROTATION_90        uint(1)
+#define PRIM_ROTATION_180       uint(2)
+#define PRIM_ROTATION_270       uint(3)
 
 void write_clip(uint clip_index) {
     Clip clip = clips[clip_index];
@@ -193,6 +195,13 @@ vec4 get_rect_color(Primitive prim) {
         case RECT_KIND_VERTICAL_GRADIENT:
             result = mix(prim.color0, prim.color1, aPosition.y);
             break;
+        case RECT_KIND_BORDER_CORNER:
+            if (aPosition.z == 0.0) {
+                result = prim.color0;
+            } else {
+                result = prim.color1;
+            }
+            break;
     }
 
     return result;
@@ -214,6 +223,7 @@ void write_rect(uint prim_index,
 
 void write_generic(uint prim_index,
                    uint layer_index,
+                   uint clip_index,
                    vec2 pos,
                    out vec4 out_pos,
                    out vec4 out_color,
@@ -251,11 +261,50 @@ void write_generic(uint prim_index,
                 out_rect = prim.st;
                 break;
             }
+            case PRIM_KIND_BORDER_CORNER: {
+                //write_clip(clip_index);
+                out_pos.xyz = layer_pos;
+                out_color = get_rect_color(prim);
+                out_rect = prim.rect;
+            }
         }
     }
 }
 
-void vs(vec2 pos, Command cmd, Primitive main_prim);
+void vs(Command cmd, Primitive main_prim, Layer main_layer);
+
+vec2 write_simple_vertex(Primitive prim, Layer layer) {
+    vec4 pos = layer.transform * vec4(mix(prim.rect.xy, prim.rect.zw, aPosition.xy), 0, 1);
+    gl_Position = uTransform * pos;
+    return pos.xy / pos.w;
+}
+
+// TODO(gw): Does this work on non-border prims?
+// TODO(gw): Re-work this so that not all generic prim paths pay this cost? (Maybe irrelevant since it's a VS cost only)
+vec2 write_complex_vertex(Primitive prim, Layer layer) {
+    vec2 local_pos = aPosition.xy;
+    switch (prim.info.z) {
+        case PRIM_ROTATION_0: {
+            local_pos.y = 1.0 - local_pos.y;
+            break;
+        }
+        case PRIM_ROTATION_90: {
+            break;
+        }
+        case PRIM_ROTATION_180: {
+            local_pos.x = 1.0 - local_pos.x;
+            break;
+        }
+        case PRIM_ROTATION_270: {
+            local_pos.x = 1.0 - local_pos.x;
+            local_pos.y = 1.0 - local_pos.y;
+            break;
+        }
+    }
+    vec4 pos = layer.transform * vec4(mix(prim.rect.xy, prim.rect.zw, local_pos), 0, 1);
+    gl_Position = uTransform * pos;
+    return pos.xy / pos.w;
+}
 
 void main() {
     Command cmd = commands[gl_InstanceID];
@@ -266,9 +315,7 @@ void main() {
     Primitive main_prim = primitives[main_prim_index];
     Layer main_layer = layers[main_layer_index];
 
-    vec2 pos = write_simple_vertex(main_prim.rect, main_layer.transform);
-
-    vs(pos, cmd, main_prim);
+    vs(cmd, main_prim, main_layer);
 }
 #endif
 
@@ -287,6 +334,16 @@ bool point_in_rect(vec2 p, vec2 p0, vec2 p1) {
            p.y >= p0.y &&
            p.x <= p1.x &&
            p.y <= p1.y;
+}
+
+void do_border_clip(vec2 pos) {
+    vec2 ref = vClipRect.xy + vec2(vClipRadii.x, vClipRadii.x);
+    float d = distance(pos, ref);
+    bool is_outside = pos.x < ref.x && pos.y < ref.y && d > vClipRadii.x;
+
+    if (is_outside) {
+        discard;
+    }
 }
 
 void do_clip(vec2 pos) {
@@ -330,6 +387,11 @@ vec4 handle_prim(vec4 pos,
             }
             case PRIM_KIND_IMAGE: {
                 result = texture(sDiffuse, rect_pos);
+                break;
+            }
+            case PRIM_KIND_BORDER_CORNER: {
+                //do_border_clip(rect_pos);
+                result = color;
                 break;
             }
         }

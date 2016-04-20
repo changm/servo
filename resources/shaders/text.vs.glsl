@@ -5,6 +5,7 @@
 void main(void)
 {
     vColorTexCoord = aColorTexCoordRectTop.xy;
-    gl_Position = uTransform * vec4(aPosition.xy, 0.0, 1.0);
+    vec2 local_pos = aPosition.xy;
+    gl_Position = uTransform * vec4(local_pos, 0.0, 1.0);
 }
 

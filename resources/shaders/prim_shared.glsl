@@ -299,35 +299,43 @@ void write_generic(uint prim_index,
 
 void vs(Command cmd, Primitive main_prim, Layer main_layer);
 
-vec2 write_simple_vertex(Primitive prim, Layer layer) {
-    vec4 pos = layer.transform * vec4(mix(prim.rect.xy, prim.rect.zw, aPosition.xy), 0, 1);
-    gl_Position = uTransform * pos;
-    return pos.xy / pos.w;
-}
-
-// TODO(gw): Does this work on non-border prims?
 // TODO(gw): Re-work this so that not all generic prim paths pay this cost? (Maybe irrelevant since it's a VS cost only)
-vec2 write_complex_vertex(Primitive prim, Layer layer) {
+vec2 write_vertex(Primitive prim, Layer layer) {
     vec2 local_pos = aPosition.xy;
-    switch (prim.info.z) {
-        case PRIM_ROTATION_0: {
-            local_pos.y = 1.0 - local_pos.y;
-            break;
-        }
-        case PRIM_ROTATION_90: {
-            break;
-        }
-        case PRIM_ROTATION_180: {
-            local_pos.x = 1.0 - local_pos.x;
-            break;
-        }
-        case PRIM_ROTATION_270: {
-            local_pos.x = 1.0 - local_pos.x;
-            local_pos.y = 1.0 - local_pos.y;
+
+    switch (prim.info.x) {
+        case PRIM_KIND_BORDER_CORNER: {
+            switch (prim.info.z) {
+                case PRIM_ROTATION_0: {
+                    local_pos.y = 1.0 - local_pos.y;
+                    break;
+                }
+                case PRIM_ROTATION_90: {
+                    break;
+                }
+                case PRIM_ROTATION_180: {
+                    local_pos.x = 1.0 - local_pos.x;
+                    break;
+                }
+                case PRIM_ROTATION_270: {
+                    local_pos.x = 1.0 - local_pos.x;
+                    local_pos.y = 1.0 - local_pos.y;
+                    break;
+                }
+            }
             break;
         }
     }
+
     vec4 pos = layer.transform * vec4(mix(prim.rect.xy, prim.rect.zw, local_pos), 0, 1);
+
+    switch (prim.info.x) {
+        case PRIM_KIND_TEXT: {
+            pos = round(pos * uDevicePixelRatio) / uDevicePixelRatio;
+            break;
+        }
+    }
+
     gl_Position = uTransform * pos;
     return pos.xy / pos.w;
 }

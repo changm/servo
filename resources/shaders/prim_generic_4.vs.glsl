@@ -3,7 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 void vs(Command cmd, Primitive main_prim, Layer main_layer) {
-    vec2 pos = write_simple_vertex(main_prim, main_layer);
+    vec2 pos = write_vertex(main_prim, main_layer);
 
     write_generic(cmd.prim_indices.x,
     			  cmd.layer_indices.x,

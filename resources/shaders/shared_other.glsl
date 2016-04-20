@@ -8,7 +8,6 @@
 #ifdef WR_VERTEX_SHADER
     in vec4 aColorTexCoordRectTop;
     in vec4 aColorRectTL;
-    uniform float uDevicePixelRatio;
 #endif
 
 //======================================================================================

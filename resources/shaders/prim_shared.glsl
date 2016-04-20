@@ -45,7 +45,7 @@ varying vec4 vPrimColor3;
 flat varying vec4 vPrimRect3;
 
 flat varying vec4 vClipRect;
-flat varying vec4 vClipRadii;
+flat varying vec4 vClipParams;
 
 //======================================================================================
 // Shared types and constants
@@ -142,10 +142,36 @@ layout(std140) uniform Clips {
 void write_clip(uint clip_index) {
     Clip clip = clips[clip_index];
     vClipRect = clip.rect;
-    vClipRadii = vec4(clip.top_left.outer_inner_radii.x,
-                      clip.top_right.outer_inner_radii.x,
-                      clip.bottom_left.outer_inner_radii.x,
-                      clip.bottom_right.outer_inner_radii.x);
+    vClipParams = vec4(clip.top_left.outer_inner_radii.x,
+                       clip.top_right.outer_inner_radii.x,
+                       clip.bottom_left.outer_inner_radii.x,
+                       clip.bottom_right.outer_inner_radii.x);
+}
+
+void write_border_clip(uint clip_index, uint rotation) {
+    Clip clip = clips[clip_index];
+    switch (rotation) {
+        case PRIM_ROTATION_0: {
+            vClipParams = vec4(clip.top_left.position.xy,
+                               clip.top_left.outer_inner_radii.xz);
+            break;
+        }
+        case PRIM_ROTATION_90: {
+            vClipParams = vec4(clip.top_right.position.xy * vec2(-1.0, 1.0),
+                               clip.top_right.outer_inner_radii.xz);
+            break;
+        }
+        case PRIM_ROTATION_180: {
+            vClipParams = vec4(clip.bottom_right.position.xy * vec2(-1.0, -1.0),
+                               clip.bottom_right.outer_inner_radii.xz);
+            break;
+        }
+        case PRIM_ROTATION_270: {
+            vClipParams = vec4(clip.bottom_left.position.xy * vec2(1.0, -1.0),
+                               clip.bottom_left.outer_inner_radii.xz);
+            break;
+        }
+    }
 }
 
 bool ray_plane(vec3 normal, vec3 point, vec3 ray_origin, vec3 ray_dir, out float t)
@@ -262,7 +288,7 @@ void write_generic(uint prim_index,
                 break;
             }
             case PRIM_KIND_BORDER_CORNER: {
-                //write_clip(clip_index);
+                write_border_clip(clip_index, prim.info.z);
                 out_pos.xyz = layer_pos;
                 out_color = get_rect_color(prim);
                 out_rect = prim.rect;
@@ -337,30 +363,29 @@ bool point_in_rect(vec2 p, vec2 p0, vec2 p1) {
 }
 
 void do_border_clip(vec2 pos) {
-    vec2 ref = vClipRect.xy + vec2(vClipRadii.x, vClipRadii.x);
-    float d = distance(pos, ref);
-    bool is_outside = pos.x < ref.x && pos.y < ref.y && d > vClipRadii.x;
-
+    float d = distance(pos, abs(vClipParams.xy));
+    bool is_outside = all(lessThan(pos * sign(vClipParams.xy), vClipParams.xy)) &&
+                      (d > vClipParams.z || d < vClipParams.w);
     if (is_outside) {
         discard;
     }
 }
 
 void do_clip(vec2 pos) {
-    vec2 ref_tl = vClipRect.xy + vec2(vClipRadii.x, vClipRadii.x);
-    vec2 ref_tr = vClipRect.xy + vec2(vClipRect.z - vClipRadii.y, vClipRadii.y);
-    vec2 ref_bl = vClipRect.xy + vec2(vClipRadii.z, vClipRect.w - vClipRadii.z);
-    vec2 ref_br = vClipRect.xy + vec2(vClipRect.z - vClipRadii.w, vClipRect.w - vClipRadii.w);
+    vec2 ref_tl = vClipRect.xy + vec2(vClipParams.x, vClipParams.x);
+    vec2 ref_tr = vClipRect.xy + vec2(vClipRect.z - vClipParams.y, vClipParams.y);
+    vec2 ref_bl = vClipRect.xy + vec2(vClipParams.z, vClipRect.w - vClipParams.z);
+    vec2 ref_br = vClipRect.xy + vec2(vClipRect.z - vClipParams.w, vClipRect.w - vClipParams.w);
 
     float d_tl = distance(pos, ref_tl);
     float d_tr = distance(pos, ref_tr);
     float d_bl = distance(pos, ref_bl);
     float d_br = distance(pos, ref_br);
 
-    bool out0 = pos.x < ref_tl.x && pos.y < ref_tl.y && d_tl > vClipRadii.x;
-    bool out1 = pos.x > ref_tr.x && pos.y < ref_tr.y && d_tr > vClipRadii.y;
-    bool out2 = pos.x < ref_bl.x && pos.y > ref_bl.y && d_bl > vClipRadii.z;
-    bool out3 = pos.x > ref_br.x && pos.y > ref_br.y && d_br > vClipRadii.w;
+    bool out0 = pos.x < ref_tl.x && pos.y < ref_tl.y && d_tl > vClipParams.x;
+    bool out1 = pos.x > ref_tr.x && pos.y < ref_tr.y && d_tr > vClipParams.y;
+    bool out2 = pos.x < ref_bl.x && pos.y > ref_bl.y && d_bl > vClipParams.z;
+    bool out3 = pos.x > ref_br.x && pos.y > ref_br.y && d_br > vClipParams.w;
 
     if (out0 || out1 || out2 || out3) {
         discard;
@@ -390,7 +415,7 @@ vec4 handle_prim(vec4 pos,
                 break;
             }
             case PRIM_KIND_BORDER_CORNER: {
-                //do_border_clip(rect_pos);
+                do_border_clip(pos.xy);
                 result = color;
                 break;
             }

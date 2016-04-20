@@ -411,8 +411,7 @@ vec4 handle_prim(vec4 pos,
                  vec4 rect) {
     uint kind = uint(pos.w);
     vec4 result = vec4(0, 0, 0, 0);
-
-    vec2 rect_pos = pos.xy / pos.z;
+    vec2 rect_pos = pos.xy;
 
     if (point_in_rect(rect_pos, rect.xy, rect.zw)) {
         switch (kind) {

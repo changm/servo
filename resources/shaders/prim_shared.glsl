@@ -28,25 +28,6 @@
 // Interpolator definitions
 //======================================================================================
 
-varying vec4 vPrimPos0;
-varying vec4 vPrimColor0;
-flat varying vec4 vPrimRect0;
-
-varying vec4 vPrimPos1;
-varying vec4 vPrimColor1;
-flat varying vec4 vPrimRect1;
-
-varying vec4 vPrimPos2;
-varying vec4 vPrimColor2;
-flat varying vec4 vPrimRect2;
-
-varying vec4 vPrimPos3;
-varying vec4 vPrimColor3;
-flat varying vec4 vPrimRect3;
-
-flat varying vec4 vClipRect;
-flat varying vec4 vClipParams;
-
 //======================================================================================
 // Shared types and constants
 //======================================================================================
@@ -54,7 +35,8 @@ flat varying vec4 vClipParams;
 #define PRIM_KIND_IMAGE             uint(1)
 #define PRIM_KIND_TEXT              uint(2)
 #define PRIM_KIND_BORDER_CORNER     uint(3)
-#define PRIM_KIND_INVALID           uint(4)
+#define PRIM_KIND_BOX_SHADOW        uint(4)
+#define PRIM_KIND_INVALID           uint(5)
 
 //======================================================================================
 // Shared types and UBOs
@@ -96,7 +78,7 @@ struct ClipCorner {
 };
 
 struct Clip {
-    vec4 rect;
+    vec4 p0_p1;
     ClipCorner top_left;
     ClipCorner top_right;
     ClipCorner bottom_left;
@@ -138,35 +120,39 @@ layout(std140) uniform Clips {
 #define PRIM_ROTATION_180       uint(2)
 #define PRIM_ROTATION_270       uint(3)
 
-void write_clip(uint clip_index) {
+void write_clip(uint clip_index,
+                out vec4 clip_rect,
+                out vec4 clip_params) {
     Clip clip = clips[clip_index];
-    vClipRect = clip.rect;
-    vClipParams = vec4(clip.top_left.outer_inner_radii.x,
+    clip_rect = clip.p0_p1;
+    clip_params = vec4(clip.top_left.outer_inner_radii.x,
                        clip.top_right.outer_inner_radii.x,
                        clip.bottom_left.outer_inner_radii.x,
                        clip.bottom_right.outer_inner_radii.x);
 }
 
-void write_border_clip(uint clip_index, uint rotation) {
+void write_border_clip(uint clip_index,
+                       uint rotation,
+                       out vec4 clip_params) {
     Clip clip = clips[clip_index];
     switch (rotation) {
         case PRIM_ROTATION_0: {
-            vClipParams = vec4(clip.top_left.position.xy,
+            clip_params = vec4(clip.top_left.position.xy,
                                clip.top_left.outer_inner_radii.xz);
             break;
         }
         case PRIM_ROTATION_90: {
-            vClipParams = vec4(clip.top_right.position.xy * vec2(-1.0, 1.0),
+            clip_params = vec4(clip.top_right.position.xy * vec2(-1.0, 1.0),
                                clip.top_right.outer_inner_radii.xz);
             break;
         }
         case PRIM_ROTATION_180: {
-            vClipParams = vec4(clip.bottom_right.position.xy * vec2(-1.0, -1.0),
+            clip_params = vec4(clip.bottom_right.position.xy * vec2(-1.0, -1.0),
                                clip.bottom_right.outer_inner_radii.xz);
             break;
         }
         case PRIM_ROTATION_270: {
-            vClipParams = vec4(clip.bottom_left.position.xy * vec2(1.0, -1.0),
+            clip_params = vec4(clip.bottom_left.position.xy * vec2(1.0, -1.0),
                                clip.bottom_left.outer_inner_radii.xz);
             break;
         }
@@ -238,20 +224,6 @@ vec4 get_rect_color(Primitive prim, vec3 layer_pos) {
     return result;
 }
 
-void write_rect(uint prim_index,
-                uint layer_index,
-                vec2 pos,
-                out vec3 out_pos,
-                out vec4 out_color,
-                out vec4 out_rect) {
-    Primitive prim = primitives[prim_index];
-    // TODO(gw): This can be simplified if VS time becomes a bottleneck!
-    vec3 layer_pos = get_layer_pos(pos, layer_index);
-    out_pos = layer_pos;
-    out_color = get_rect_color(prim, layer_pos);
-    out_rect = prim.rect;
-}
-
 void write_generic(uint prim_index,
                    uint layer_index,
                    uint clip_index,
@@ -293,10 +265,20 @@ void write_generic(uint prim_index,
                 break;
             }
             case PRIM_KIND_BORDER_CORNER: {
-                write_border_clip(clip_index, prim.info.z);
+                //write_border_clip(clip_index, prim.info.z);
                 out_pos.xyz = layer_pos;
                 out_color = get_rect_color(prim, layer_pos);
                 out_rect = prim.rect;
+                break;
+            }
+            case PRIM_KIND_BOX_SHADOW: {
+                vec2 f = (layer_pos.xy - prim.rect.xy) / (prim.rect.zw - prim.rect.xy);
+                vec2 interp_uv = mix(prim.st.xy, prim.st.zw, f * layer_pos.z);
+                //vClipInRect = prim.clip_rect;
+                out_pos.xyz = layer_pos;// vec3(interp_uv, layer_pos.z);
+                out_color = prim.color0;
+                out_rect = prim.rect;//prim.st;
+                break;
             }
         }
     }
@@ -375,30 +357,30 @@ bool point_in_rect(vec2 p, vec2 p0, vec2 p1) {
            p.y <= p1.y;
 }
 
-void do_border_clip(vec2 pos) {
-    float d = distance(pos, abs(vClipParams.xy));
-    bool is_outside = all(lessThan(pos * sign(vClipParams.xy), vClipParams.xy)) &&
-                      (d > vClipParams.z || d < vClipParams.w);
+void do_border_clip(vec2 pos, vec4 clip_params) {
+    float d = distance(pos, abs(clip_params.xy));
+    bool is_outside = all(lessThan(pos * sign(clip_params.xy), clip_params.xy)) &&
+                      (d > clip_params.z || d < clip_params.w);
     if (is_outside) {
         discard;
     }
 }
 
-void do_clip(vec2 pos) {
-    vec2 ref_tl = vClipRect.xy + vec2(vClipParams.x, vClipParams.x);
-    vec2 ref_tr = vClipRect.xy + vec2(vClipRect.z - vClipParams.y, vClipParams.y);
-    vec2 ref_bl = vClipRect.xy + vec2(vClipParams.z, vClipRect.w - vClipParams.z);
-    vec2 ref_br = vClipRect.xy + vec2(vClipRect.z - vClipParams.w, vClipRect.w - vClipParams.w);
+void do_clip(vec2 pos, vec4 clip_rect, vec4 clip_params) {
+    vec2 ref_tl = clip_rect.xy + vec2(clip_params.x, clip_params.x);
+    vec2 ref_tr = clip_rect.zy + vec2(-clip_params.y, clip_params.y);
+    vec2 ref_bl = clip_rect.xw + vec2(clip_params.z, -clip_params.z);
+    vec2 ref_br = clip_rect.zw + vec2(-clip_params.w, -clip_params.w);
 
     float d_tl = distance(pos, ref_tl);
     float d_tr = distance(pos, ref_tr);
     float d_bl = distance(pos, ref_bl);
     float d_br = distance(pos, ref_br);
 
-    bool out0 = pos.x < ref_tl.x && pos.y < ref_tl.y && d_tl > vClipParams.x;
-    bool out1 = pos.x > ref_tr.x && pos.y < ref_tr.y && d_tr > vClipParams.y;
-    bool out2 = pos.x < ref_bl.x && pos.y > ref_bl.y && d_bl > vClipParams.z;
-    bool out3 = pos.x > ref_br.x && pos.y > ref_br.y && d_br > vClipParams.w;
+    bool out0 = pos.x < ref_tl.x && pos.y < ref_tl.y && d_tl > clip_params.x;
+    bool out1 = pos.x > ref_tr.x && pos.y < ref_tr.y && d_tr > clip_params.y;
+    bool out2 = pos.x < ref_bl.x && pos.y > ref_bl.y && d_bl > clip_params.z;
+    bool out3 = pos.x > ref_br.x && pos.y > ref_br.y && d_br > clip_params.w;
 
     if (out0 || out1 || out2 || out3) {
         discard;
@@ -427,7 +409,14 @@ vec4 handle_prim(vec4 pos,
                 break;
             }
             case PRIM_KIND_BORDER_CORNER: {
-                do_border_clip(pos.xy);
+                //do_border_clip(pos.xy);
+                result = color;
+                break;
+            }
+            case PRIM_KIND_BOX_SHADOW: {
+                //if (point_in_rect(rect_pos, vClipInRect.xy, vClipInRect.xy + vClipInRect.zw)) {
+                //    discard;
+                //}
                 result = color;
                 break;
             }

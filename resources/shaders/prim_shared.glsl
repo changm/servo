@@ -299,20 +299,11 @@ void write_generic(uint prim_index,
 
                     switch (prim.info.z) {
                         case PRIM_ROTATION_0:
+                        case PRIM_ROTATION_180:
                             break;
                         case PRIM_ROTATION_90:
-                            f = vec2(f.y, f.x);
-                            st0 = prim.st.xw;
-                            st1 = prim.st.zy;
-                            break;
-                        case PRIM_ROTATION_180:
-                            st0 = prim.st.zw;
-                            st1 = prim.st.xy;
-                            break;
                         case PRIM_ROTATION_270:
                             f = vec2(f.y, f.x);
-                            st0 = prim.st.zy;
-                            st1 = prim.st.xw;
                             break;
                     }
 

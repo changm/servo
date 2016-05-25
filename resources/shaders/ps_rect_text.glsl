@@ -2,7 +2,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-void main(void) {
-    vec4 c0 = texture(sDiffuse, vImageUv);
-    write_result(c0);
-}
+varying vec2 vTextUv;
+varying vec4 vTextColor;
+varying vec4 vRectColor;

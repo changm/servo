@@ -3,6 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 void main(void) {
-    vec4 c0 = texture(sDiffuse, vImageUv);
+    vec4 c0 = vImageColor * texture(sDiffuse, vImageUv);
     write_result(c0);
 }

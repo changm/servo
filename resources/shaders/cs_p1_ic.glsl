@@ -1,0 +1,15 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+varying vec2 vUv0;
+varying vec2 vUv1;
+varying vec2 vUv2;
+varying vec2 vUv3;
+
+flat varying float vLayerReset[3];
+flat varying float vLayerAlpha[3];
+
+//flat varying vec4 vBlendValues;
+//flat varying uvec4 vPrimIndex;
+//flat varying uvec4 vPrimCount;

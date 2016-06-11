@@ -194,6 +194,9 @@ pub struct Opts {
     /// True to show webrender profiling stats on screen.
     pub webrender_stats: bool,
 
+    /// True to show webrender debug on screen.
+    pub webrender_debug: bool,
+
     /// True if WebRender should use multisample antialiasing.
     pub use_msaa: bool,
 
@@ -289,6 +292,9 @@ pub struct DebugOptions {
     /// Show webrender profiling stats on screen.
     pub webrender_stats: bool,
 
+    /// Show webrender debug on screen.
+    pub webrender_debug: bool,
+
     /// Use multisample antialiasing in WebRender.
     pub use_msaa: bool,
 
@@ -328,6 +334,7 @@ impl DebugOptions {
                 "load-webfonts-synchronously" => debug_options.load_webfonts_synchronously = true,
                 "disable-vsync" => debug_options.disable_vsync = true,
                 "wr-stats" => debug_options.webrender_stats = true,
+                "wr-debug" => debug_options.webrender_debug = true,
                 "msaa" => debug_options.use_msaa = true,
                 "full-backtraces" => debug_options.full_backtraces = true,
                 "" => {},
@@ -517,6 +524,7 @@ pub fn default_opts() -> Opts {
         render_api: DEFAULT_RENDER_API,
         config_dir: None,
         full_backtraces: false,
+        webrender_debug: false,
     }
 }
 
@@ -575,6 +583,7 @@ pub fn from_cmdline_args(args: &[String]) -> ArgumentParsingResult {
     opts.optopt("", "config-dir",
                     "config directory following xdg spec on linux platform", "");
 
+    opts.optopt("", "tile", "Set tile size.", "80x60");
 
     let opt_match = match opts.parse(args) {
         Ok(m) => m,
@@ -820,6 +829,7 @@ pub fn from_cmdline_args(args: &[String]) -> ArgumentParsingResult {
         use_msaa: debug_options.use_msaa,
         config_dir: opt_match.opt_str("config-dir"),
         full_backtraces: debug_options.full_backtraces,
+        webrender_debug: debug_options.webrender_debug,
     };
 
     set_defaults(opts);

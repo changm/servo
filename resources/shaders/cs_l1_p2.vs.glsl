@@ -2,7 +2,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-void main(void)
-{
-    oFragColor = vColor;
+void main() {
+    CompositeTile tile = tiles[gl_InstanceID];
+    vec2 pos = write_vertex(tile);
+
+    vUv0 = write_prim(pos, tile.prim_indices[0].x);
+    vUv1 = write_prim(pos, tile.prim_indices[0].y);
 }

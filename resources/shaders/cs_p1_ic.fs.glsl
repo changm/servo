@@ -13,28 +13,20 @@ void main(void) {
     vec4 layer_color = vec4(0, 0, 0, 0);
 
     layer_color = mix(layer_color, prim_colors[0], prim_colors[0].a);
-    if (vLayerCmds.x == CMD_MIX) {
-        result = mix(result, layer_color, layer_color.a);
-        layer_color = vec4(0, 0, 0, 0);
-    }
+    result = mix(result, layer_color, layer_color.a * vLayerCmds.x);
+    layer_color = mix(layer_color, vec4(0, 0, 0, 0), vLayerCmds.x);
 
     layer_color = mix(layer_color, prim_colors[1], prim_colors[1].a);
-    if (vLayerCmds.y == CMD_MIX) {
-        result = mix(result, layer_color, layer_color.a);
-        layer_color = vec4(0, 0, 0, 0);
-    }
+    result = mix(result, layer_color, layer_color.a * vLayerCmds.y);
+    layer_color = mix(layer_color, vec4(0, 0, 0, 0), vLayerCmds.y);
 
     layer_color = mix(layer_color, prim_colors[2], prim_colors[2].a);
-    if (vLayerCmds.z == CMD_MIX) {
-        result = mix(result, layer_color, layer_color.a);
-        layer_color = vec4(0, 0, 0, 0);
-    }
+    result = mix(result, layer_color, layer_color.a * vLayerCmds.z);
+    layer_color = mix(layer_color, vec4(0, 0, 0, 0), vLayerCmds.z);
 
     layer_color = mix(layer_color, prim_colors[3], prim_colors[3].a);
-    if (vLayerCmds.w == CMD_MIX) {
-        result = mix(result, layer_color, layer_color.a);
-        layer_color = vec4(0, 0, 0, 0);
-    }
+    result = mix(result, layer_color, layer_color.a * vLayerCmds.w);
+    layer_color = mix(layer_color, vec4(0, 0, 0, 0), vLayerCmds.w);
 
     oFragColor = result;
 

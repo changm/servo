@@ -13,8 +13,8 @@ void main() {
     vUv2 = write_prim(pos, tile.prim_indices[0].z);
     vUv3 = write_prim(pos, tile.prim_indices[0].w);
 
-    vLayerCmds.x = tile.layer_indices[0].x == tile.layer_indices[0].y ? CMD_ACCUMULATE : CMD_MIX;
-    vLayerCmds.y = tile.layer_indices[0].y == tile.layer_indices[0].z ? CMD_ACCUMULATE : CMD_MIX;
-    vLayerCmds.z = tile.layer_indices[0].z == tile.layer_indices[0].w ? CMD_ACCUMULATE : CMD_MIX;
-    vLayerCmds.w = tile.layer_indices[0].w == INVALID_LAYER_INDEX ? CMD_ACCUMULATE : CMD_MIX;
+    vLayerCmds.x = tile.layer_indices[0].x == tile.layer_indices[0].y ? 0.0 : 1.0;
+    vLayerCmds.y = tile.layer_indices[0].y == tile.layer_indices[0].z ? 0.0 : 1.0;
+    vLayerCmds.z = tile.layer_indices[0].z == tile.layer_indices[0].w ? 0.0 : 1.0;
+    vLayerCmds.w = tile.layer_indices[0].w == INVALID_LAYER_INDEX ? 0.0 : 1.0;
 }

@@ -21,8 +21,9 @@ struct CompositeLayer {
 struct CompositeTile {
     ivec4 rect;
     uvec4 prim_indices[MAX_PRIMS_PER_COMPOSITE/4];
-    uvec4 blend_modes[MAX_PRIMS_PER_COMPOSITE/4];
-    vec4 layer_values[MAX_PRIMS_PER_COMPOSITE/4];
+    uvec4 layer_indices[MAX_PRIMS_PER_COMPOSITE/4];
+    //uvec4 blend_modes[MAX_PRIMS_PER_COMPOSITE/4];
+    //vec4 layer_values[MAX_PRIMS_PER_COMPOSITE/4];
 };
 
 layout(std140) uniform Tiles {

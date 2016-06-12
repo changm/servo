@@ -41,17 +41,4 @@ void main() {
     } else {
         vLayerValues.w = layers[li3].blend_info.x;
     }
-
-/*
-    vLayerCmds.x = tile.layer_indices[0].x == tile.layer_indices[0].y ? 0.0 : 1.0;
-    vLayerCmds.y = tile.layer_indices[0].y == tile.layer_indices[0].z ? 0.0 : 1.0;
-    vLayerCmds.z = tile.layer_indices[0].z == tile.layer_indices[0].w ? 0.0 : 1.0;
-    vLayerCmds.w = tile.layer_indices[0].w == INVALID_LAYER_INDEX ? 0.0 : 1.0;
-
-
-    vLayerValues.x = li0 == INVALID_LAYER_INDEX ? 0.0 : layers[li0].blend_info.x;
-    vLayerValues.y = li1 == INVALID_LAYER_INDEX ? 0.0 : layers[li1].blend_info.x;
-    vLayerValues.z = li2 == INVALID_LAYER_INDEX ? 0.0 : layers[li2].blend_info.x;
-    vLayerValues.w = li3 == INVALID_LAYER_INDEX ? 0.0 : layers[li3].blend_info.x;
-    */
 }

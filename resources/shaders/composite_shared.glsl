@@ -5,6 +5,8 @@
 #define MAX_LAYERS_PER_COMPOSITE		(4)
 #define MAX_PRIMS_PER_COMPOSITE         (4)
 
+#define INVALID_LAYER_INDEX             uint(0xffffffff)
+
 uniform sampler2D sLayer0;
 uniform sampler2D sLayer1;
 uniform sampler2D sLayer2;

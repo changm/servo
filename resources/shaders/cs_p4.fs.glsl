@@ -28,7 +28,6 @@ void main(void) {
 
     layer_color = mix(layer_color, prim_colors[3], prim_colors[3].a);
     result = mix(result, layer_color, layer_color.a * vLayerValues.w);
-    layer_color = mix(layer_color, vec4(0, 0, 0, 0), vec4(vLayerValues.w > 0.0));
 
     oFragColor = result;
 }

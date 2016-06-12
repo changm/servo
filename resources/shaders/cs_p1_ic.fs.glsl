@@ -1,3 +1,5 @@
+#line 1
+
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -13,80 +15,20 @@ void main(void) {
     vec4 layer_color = vec4(0, 0, 0, 0);
 
     layer_color = mix(layer_color, prim_colors[0], prim_colors[0].a);
-    result = mix(result, layer_color, layer_color.a * vLayerCmds.x);
-    layer_color = mix(layer_color, vec4(0, 0, 0, 0), vLayerCmds.x);
+    result = mix(result, layer_color, layer_color.a * vLayerValues.x);
+    layer_color = mix(layer_color, vec4(0, 0, 0, 0), vec4(vLayerValues.x > 0.0));
 
     layer_color = mix(layer_color, prim_colors[1], prim_colors[1].a);
-    result = mix(result, layer_color, layer_color.a * vLayerCmds.y);
-    layer_color = mix(layer_color, vec4(0, 0, 0, 0), vLayerCmds.y);
+    result = mix(result, layer_color, layer_color.a * vLayerValues.y);
+    layer_color = mix(layer_color, vec4(0, 0, 0, 0), vec4(vLayerValues.y > 0.0));
 
     layer_color = mix(layer_color, prim_colors[2], prim_colors[2].a);
-    result = mix(result, layer_color, layer_color.a * vLayerCmds.z);
-    layer_color = mix(layer_color, vec4(0, 0, 0, 0), vLayerCmds.z);
+    result = mix(result, layer_color, layer_color.a * vLayerValues.z);
+    layer_color = mix(layer_color, vec4(0, 0, 0, 0), vec4(vLayerValues.z > 0.0));
 
     layer_color = mix(layer_color, prim_colors[3], prim_colors[3].a);
-    result = mix(result, layer_color, layer_color.a * vLayerCmds.w);
-    layer_color = mix(layer_color, vec4(0, 0, 0, 0), vLayerCmds.w);
+    result = mix(result, layer_color, layer_color.a * vLayerValues.w);
+    layer_color = mix(layer_color, vec4(0, 0, 0, 0), vec4(vLayerValues.w > 0.0));
 
     oFragColor = result;
-
-    /*
-     layer index invalid -> mask out color (alpha = 0) [or just don't mix into final result!?]
-
-        Either:
-            accumulate into current layer color
-                OR
-            mix into layer with layer opacity (and reset current layer color)
-
-            init layer color = zero
-            init result = zero
-                mix prim color into layer color
-                if layer changes
-                    mix layer color into current result
-                    reset layer color
-                (0/1) mix that into result (if layer changes)
-
-        */
-
-    //oFragColor = prim_colors[2];
-
-    /*
-    vec4 result = fetch_initial_color();
-
-    vec4 layer_color = prim_colors[3];
-
-    layer_color = vLayerReset[2] * layer_color;
-    layer_color = mix(layer_color, prim_colors[2], prim_colors[2].a);
-    result = mix(result, layer_color, vLayerAlpha[2] * layer_color.a);
-
-    layer_color = vLayerReset[1] * layer_color;
-    layer_color = mix(layer_color, prim_colors[1], prim_colors[1].a);
-    result = mix(result, layer_color, vLayerAlpha[1] * layer_color.a);
-
-    layer_color = vLayerReset[0] * layer_color;
-    layer_color = mix(layer_color, prim_colors[0], prim_colors[0].a);
-    result = mix(result, layer_color, vLayerAlpha[0] * layer_color.a);
-*/
-
-    //result = mix(result, prim_colors[3], prim_colors[3].a);
-    //result = mix(result, prim_colors[2], prim_colors[2].a);
-    //result = mix(result, prim_colors[1], prim_colors[1].a);
-    //result = mix(result, prim_colors[0], prim_colors[0].a);
-
-    /*
-    for (int i=MAX_LAYERS_PER_COMPOSITE-1 ; i >= 0 ; --i) {
-        float layer_alpha = vBlendValues[i];
-        int prim_index = int(vPrimIndex[i]);
-        int prim_count = int(vPrimCount[i]);
-
-        vec4 layer_color = vec4(0, 0, 0, 0);
-        for (int j=prim_index+prim_count-1 ; j >= prim_index ; --j) {
-            vec4 prim_color = prim_colors[j];
-            layer_color = mix(layer_color, prim_color, prim_color.a);
-        }
-
-        result = mix(result, layer_color, layer_alpha * layer_color.a);
-    }*/
-
-    //oFragColor = result;
 }

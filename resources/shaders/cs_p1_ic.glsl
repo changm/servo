@@ -12,5 +12,5 @@ varying vec2 vUv1;
 varying vec2 vUv2;
 varying vec2 vUv3;
 
-flat varying vec4 vLayerCmds;
+//flat varying vec4 vLayerCmds;
 flat varying vec4 vLayerValues;

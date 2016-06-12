@@ -11,19 +11,21 @@ uniform sampler2D sLayer2;
 uniform sampler2D sLayer3;
 uniform sampler2D sCache;
 
-/*
-struct CompositeLayer {
-    uvec4 prim_index_count;
-    vec4 value;
-};
-*/
-
 struct CompositeTile {
     ivec4 rect;
     uvec4 prim_indices[MAX_PRIMS_PER_COMPOSITE/4];
     uvec4 layer_indices[MAX_PRIMS_PER_COMPOSITE/4];
-    //uvec4 blend_modes[MAX_PRIMS_PER_COMPOSITE/4];
-    //vec4 layer_values[MAX_PRIMS_PER_COMPOSITE/4];
+};
+
+struct Layer {
+    mat4 transform;
+    mat4 inv_transform;
+    vec4 screen_vertices[4];
+    vec4 blend_info;
+};
+
+layout(std140) uniform Layers {
+    Layer layers[256];
 };
 
 layout(std140) uniform Tiles {

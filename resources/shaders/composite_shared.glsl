@@ -2,8 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#define MAX_LAYERS_PER_COMPOSITE		(4)
-#define MAX_PRIMS_PER_COMPOSITE         (4)
+#define MAX_PRIMS_PER_COMPOSITE         (8)
 
 #define INVALID_LAYER_INDEX             uint(0xffffffff)
 

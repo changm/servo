@@ -10,6 +10,10 @@ uniform sampler2D sLayer0;
 uniform sampler2D sLayer1;
 uniform sampler2D sLayer2;
 uniform sampler2D sLayer3;
+uniform sampler2D sLayer4;
+uniform sampler2D sLayer5;
+uniform sampler2D sLayer6;
+uniform sampler2D sLayer7;
 uniform sampler2D sCache;
 
 struct CompositeTile {
